@@ -10,6 +10,7 @@
             <file>tests/Concurrency/EvidenceJournalDatabaseTest.php</file>
             <file>tests/Concurrency/ManualResolutionRaceTest.php</file>
             <file>tests/Concurrency/OutboxDatabaseTest.php</file>
+            <file>tests/Concurrency/InboxDatabaseTest.php</file>
         </testsuite>
     </testsuites>
     <php>
