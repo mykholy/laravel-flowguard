@@ -1,33 +1,49 @@
 # Laravel Flowguard
 
-**Reliable business operations for Laravel — experimental prototype.**
+**Durable business-operation primitives for Laravel 12 and 13.**
 
-> **Status: pre-alpha. Do not use to capture real payments.** No release has been
-> published to Packagist and the integration test suite has not yet been executed
-> in the authoring environment. This repository is a source starter, not a
-> production guarantee.
+> **Release status: developer preview, no stable tag yet.** The implementation
+> passes an automated Laravel 12/13, PHP 8.3/8.4, MySQL 8 and PostgreSQL 16
+> compatibility matrix. Passing CI does not establish real-provider safety.
+> Do not use Flowguard to capture live payments until the
+> [release criteria](docs/RELEASE_CRITERIA.md) are closed.
 
 Flowguard solves a different problem from Telescope, Horizon and Pulse:
 **who is allowed to execute a business operation, whether the outcome is known,
 and whether replay could be unsafe**. It does not replace tracing/monitoring.
 
-## What works in this first vertical slice
+## Included primitives
 
-- Durable, scoped database idempotency claims (MySQL/PostgreSQL/SQLite syntax intended).
-- Canonical JSON request fingerprint; conflict on key reuse with different data.
-- Atomic owner-only transitions: `processing -> completed | requires_reconciliation`.
-- Duplicate callers never receive a claim; completed callers receive safe result metadata.
-- After a crash, claims stay `processing` and are **never** automatically reissued.
-- No external provider API calls or automatic recovery.
+- Scoped idempotency claims with immutable payload fingerprints and owner-only
+  transitions, including an explicit unknown-outcome state.
+- Read-only reconciliation inspection, append-only evidence and optional
+  authorization-gated manual outcome classification.
+- Durable inbox receipts and atomic outbox recording within business transactions.
+- Outbox leasing, bounded retry, fenced acknowledgement and a transport-neutral
+  publisher contract.
+- Read-only diagnostics for storage readiness and stale operations.
+- MySQL/PostgreSQL independent-process contention and crash-point tests.
+
+The host application still owns gateway signature verification, tenant security,
+publisher timeouts, remote idempotency and any real two-person approval workflow.
+Flowguard does not guarantee exactly-once effects across external systems.
 
 ## Requirements and local development
 
-PHP 8.3+, Laravel 12/13, a transactional database, Composer 2. Laravel 12 & 13
-compatibility is *targeted* and is not fully tested yet.
+PHP 8.3+, Laravel 12/13, a transactional database and Composer 2.
+CI tests Laravel 12/13 on PHP 8.3/8.4, plus MySQL 8 and PostgreSQL 16.
 
-Once published on Packagist, the planned install command is
-`composer require mykholy/laravel-flowguard`. **Until then, use a local path
-repository or a GitHub VCS repository**, not that Packagist command.
+The package is not yet published to Packagist. For development environments,
+use Composer's GitHub VCS repository support:
+
+```bash
+composer config repositories.flowguard vcs https://github.com/mykholy/laravel-flowguard.git
+composer require mykholy/laravel-flowguard:dev-main
+php artisan migrate
+php artisan flowguard:doctor
+```
+
+Do not use the development branch with real payments.
 
 ```bash
 composer install
@@ -175,7 +191,8 @@ background worker yet. See [lease contract](docs/RFC-003-LEASING.md).
 
 ## Contribution
 
-See [roadmap](docs/ROADMAP.md). Contributions should include a failing regression test,
+See the [roadmap](docs/ROADMAP.md), [operations runbook](docs/OPERATIONS.md)
+and [release criteria](docs/RELEASE_CRITERIA.md). Contributions should include a failing regression test,
 public failure scenario and rationale for any API change. Small, reviewable PRs preferred.
 
 MIT © 2026 Ahmed El-Kholy.
