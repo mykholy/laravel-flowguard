@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Mykholy\Flowguard\Tests\Feature;
 
 use Illuminate\Database\QueryException;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use InvalidArgumentException;
 use LogicException;
 use Mykholy\Flowguard\Outbox\DatabaseOutboxRecorder;
@@ -34,7 +34,7 @@ final class DatabaseOutboxRecorderTest extends TestCase
     {
         $message = DB::transaction(function () {
             DB::table('flowguard_test_orders')->insert(['number' => 'order-100']);
-            
+
             return $this->recorder()->record('tenant.42:orders', 'order-100:created', 'order.created', 'order-100');
         });
 
