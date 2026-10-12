@@ -103,6 +103,23 @@ provider lookup. This is intentionally **not** an automated recovery system.
 
 See [RFC-002](docs/RFC-002-READ_ONLY.md) for the API and limits.
 
+## Opt-in durable reconciliation evidence journal (experimental)
+
+A provider observation is not permission to retry or complete a payment. Flowguard
+can now persist a **reduced, authorized audit observation** on the same database
+connection, while leaving the operation in `requires_reconciliation`.
+
+- Requires an application-supplied `EvidenceAuthorization` policy. No default
+  allow-all binding exists. Your policy must authenticate the operator and enforce
+  tenant ownership; an actor string alone is not authentication.
+- Rechecks the database row under a transaction lock before inserting evidence.
+- Stores typed observation metadata but **not** raw provider references, request
+  payloads, headers or gateway responses.
+- Does **not** implement replay, capture, refund, or finalization.
+
+See [RFC-002 evidence journal](docs/RFC-002-EVIDENCE-JOURNAL.md). This is still
+pre-alpha and needs fault-injection and independent security review.
+
 ## Correctness and versioning policy
 
 - Never repeat external effects when an existing operation is processing or unknown.
