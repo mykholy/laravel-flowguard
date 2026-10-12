@@ -32,7 +32,7 @@ final readonly class DatabaseInboxRecorder
     }
 
     /**
-     * @param array<string|int, mixed> $payload
+     * @param  array<string|int, mixed>  $payload
      */
     public function receive(
         string $scope,
