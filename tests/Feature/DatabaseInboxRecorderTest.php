@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace Mykholy\Flowguard\Tests\Feature;
 
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use Mykholy\Flowguard\Exceptions\IdempotencyConflict;
 use Mykholy\Flowguard\Inbox\DatabaseInboxRecorder;
+use Mykholy\Flowguard\Inbox\InboxReceipt;
 use RuntimeException;
 
 final class DatabaseInboxRecorderTest extends TestCase
 {
-    private function receive(array $payload = ['event' => 'paid'], string $scope = 'tenant.42:webhooks'): \Mykholy\Flowguard\Inbox\InboxReceipt
+    private function receive(array $payload = ['event' => 'paid'], string $scope = 'tenant.42:webhooks'): InboxReceipt
     {
         return (new DatabaseInboxRecorder(DB::connection()))
             ->receive($scope, 'gateway-event-1', $payload, 'payment.received', 'payment-1');
@@ -77,7 +79,7 @@ final class DatabaseInboxRecorderTest extends TestCase
 
     public function test_invalid_scope_is_rejected(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->receive([], 'tenant 42');
     }
 }
