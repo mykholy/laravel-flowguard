@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mykholy\Flowguard\Outbox;
 
+use Mykholy\Flowguard\Contracts\OutboxDispatchPrecondition;
 use Mykholy\Flowguard\Contracts\OutboxLeaseRepository;
 use Mykholy\Flowguard\Contracts\OutboxPublisher;
 use Psr\Log\LoggerInterface;
@@ -22,6 +23,10 @@ final readonly class OutboxDispatcher
 
     public function dispatchOne(): bool
     {
+        if ($this->leases instanceof OutboxDispatchPrecondition) {
+            $this->leases->assertDispatchAllowed();
+        }
+
         $lease = $this->leases->reserve($this->leaseSeconds);
 
         if ($lease === null) {
