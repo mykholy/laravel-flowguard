@@ -26,7 +26,11 @@
 ## Phase C — ecosystem
 
 - [ ] Optional Laravel Queue / Spatie Webhook Client adapters
-- [ ] Transactional outbox / inbox with documented at-least-once delivery
+- [x] Transactional outbox recording boundary with MySQL/PostgreSQL tests
+- [x] Initial reservation, fencing, acknowledgement and bounded retry primitives
+- [ ] Independent-process lease contention and fault-injection tests
+- [ ] Publisher integration with at-least-once delivery and consumer idempotency
+- [ ] Durable inbound event inbox
 - [ ] Optional UI without forced Filament or Livewire dependency
 - [ ] Sandbox-only example integrations and versioned docs
 

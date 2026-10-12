@@ -14,6 +14,7 @@ use Mykholy\Flowguard\Domain\OperationSnapshot;
 use Mykholy\Flowguard\Domain\OperationStatus;
 use Mykholy\Flowguard\Exceptions\InvalidTransition;
 use Mykholy\Flowguard\Exceptions\ResolutionRejected;
+use Mykholy\Flowguard\Infrastructure\UtcDatabaseClock;
 use stdClass;
 
 /**
@@ -41,25 +42,6 @@ final readonly class DatabaseManualResolver
         if ($maxEvidenceAgeSeconds < 1 || $maxEvidenceAgeSeconds > 86400) {
             throw new InvalidArgumentException('Evidence max age must be between 1 and 86400 seconds.');
         }
-    }
-
-    private function databaseTime(): DateTimeImmutable
-    {
-        $expression = match ($this->connection->getDriverName()) {
-            'mysql' => 'UTC_TIMESTAMP(6)',
-            'pgsql' => "(clock_timestamp() AT TIME ZONE 'UTC')",
-            'sqlite' => "strftime('%Y-%m-%d %H:%M:%f', 'now')",
-            default => throw new InvalidArgumentException('Unsupported database driver for manual resolution.'),
-        };
-
-        /** @var stdClass|null $row */
-        $row = $this->connection->selectOne('SELECT '.$expression.' AS db_now');
-
-        if ($row === null || ! is_string($row->db_now)) {
-            throw new ResolutionRejected('Could not read the database clock.');
-        }
-
-        return new DateTimeImmutable($row->db_now, new DateTimeZone('UTC'));
     }
 
     public function resolve(
@@ -138,7 +120,7 @@ final readonly class DatabaseManualResolver
             }
 
             $observedAt = new DateTimeImmutable((string) $latest->observed_at, new DateTimeZone('UTC'));
-            $now = $this->databaseTime();
+            $now = UtcDatabaseClock::now($this->connection);
             $ageSeconds = (float) $now->format('U.u') - (float) $observedAt->format('U.u');
 
             if ($ageSeconds < -60 || $ageSeconds > $this->maxEvidenceAgeSeconds) {
