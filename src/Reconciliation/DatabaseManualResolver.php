@@ -53,13 +53,13 @@ final readonly class DatabaseManualResolver
         };
 
         /** @var stdClass|null $row */
-        $row = $this->connection->selectOne('SELECT '.$expression.' AS current_time');
+        $row = $this->connection->selectOne('SELECT '.$expression.' AS db_now');
 
-        if ($row === null || ! is_string($row->current_time)) {
+        if ($row === null || ! is_string($row->db_now)) {
             throw new ResolutionRejected('Could not read the database clock.');
         }
 
-        return new DateTimeImmutable($row->current_time, new DateTimeZone('UTC'));
+        return new DateTimeImmutable($row->db_now, new DateTimeZone('UTC'));
     }
 
     public function resolve(
