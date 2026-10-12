@@ -8,6 +8,7 @@
         <testsuite name="Concurrency">
             <file>tests/Concurrency/DatabaseRaceTest.php</file>
             <file>tests/Concurrency/EvidenceJournalDatabaseTest.php</file>
+            <file>tests/Concurrency/ManualResolutionRaceTest.php</file>
             <file>tests/Concurrency/OutboxDatabaseTest.php</file>
         </testsuite>
     </testsuites>

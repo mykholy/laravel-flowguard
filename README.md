@@ -120,6 +120,35 @@ connection, while leaving the operation in `requires_reconciliation`.
 See [RFC-002 evidence journal](docs/RFC-002-EVIDENCE-JOURNAL.md). This is still
 pre-alpha and needs fault-injection and independent security review.
 
+## Opt-in manual outcome classification (experimental)
+
+The optional `DatabaseManualResolver` can classify a previously unknown
+external outcome as `reconciled_success` or `reconciled_failure`. These statuses
+are **bookkeeping only**, and are NOT equivalent to completed application-side
+writes. No payment, refund, capture, replay or business record mutation occurs.
+
+It rejects stale, conflicting, inconclusive or superseded evidence; requires
+**two independently authenticated people and a bound approval verified by an
+application-supplied `ResolutionAuthorization` policy**; and atomically writes
+a decision record with the status change. The package DOES NOT implement login
+or collecting real two-person approvals. An actor-reference string alone is
+not proof of identity or approval. Do not enable this in production without
+an independently reviewed host-app policy.
+
+See [manual resolution RFC](docs/RFC-002-MANUAL-RESOLUTION.md).
+
+## Transactional outbox recording (experimental)
+
+`DatabaseOutboxRecorder` records a small, durable signal in the same database
+transaction as a business change. It refuses to record outside an active
+transaction. The caller must use the **same database connection** for both
+writes and scope event identities by tenant. Duplicates fail through a database
+unique constraint.
+
+This increment **does not dispatch messages**. Recorded rows remain pending;
+leasing, retries and at-least-once delivery are follow-up work.
+See [outbox recording design](docs/RFC-003-OUTBOX.md).
+
 ## Correctness and versioning policy
 
 - Never repeat external effects when an existing operation is processing or unknown.
@@ -127,7 +156,7 @@ pre-alpha and needs fault-injection and independent security review.
 - Only application-verified, authorized, validated requests reach the engine.
 - Do not store raw PII, gateway secrets, or complete response bodies in result metadata.
 - No SLA and no semantic version stability in this pre-alpha starter.
-- Tests against multiple *processes* and production databases are pending.
+- Initial independent-process tests run on disposable MySQL/PostgreSQL databases in CI; expanded crash/fault testing remains pending.
 
 ## Contribution
 
