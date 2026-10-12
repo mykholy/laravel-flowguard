@@ -61,6 +61,7 @@ To customize the connection/table, publish the config:
 php artisan vendor:publish --tag=flowguard-config
 php artisan migrate
 php artisan flowguard:doctor
+php artisan flowguard:outbox --max-attempts=10 --limit=50
 php artisan flowguard:stale --minutes=15 --limit=50
 ```
 
