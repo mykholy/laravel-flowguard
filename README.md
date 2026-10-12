@@ -146,8 +146,22 @@ writes and scope event identities by tenant. Duplicates fail through a database
 unique constraint.
 
 This increment **does not dispatch messages**. Recorded rows remain pending;
-leasing, retries and at-least-once delivery are follow-up work.
+leasing and publishing are separate features. See the experimental reservation
+API below; automatic dispatch is still not provided.
 See [outbox recording design](docs/RFC-003-OUTBOX.md).
+
+## Outbox reservation lifecycle (experimental)
+
+`DatabaseOutboxLeaseStore` allows a worker to reserve one pending message,
+acknowledge it after successful publishing, or release it with a bounded retry
+delay and machine-readable error code. Each lease carries an opaque token;
+expired or replaced leases cannot acknowledge delivery. Attempts are capped
+(default: 10), leaving exhausted records for operator inspection.
+
+Consumers **must** support duplicate delivery. A publisher may succeed while
+its worker crashes before acknowledging the row. This is an at-least-once
+foundation, not exactly-once delivery, and there is no bundled publisher or
+background worker yet. See [lease contract](docs/RFC-003-LEASING.md).
 
 ## Correctness and versioning policy
 
