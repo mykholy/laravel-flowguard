@@ -20,7 +20,7 @@ use stdClass;
  * A publisher must execute outside the reservation transaction. Crashes may
  * cause redelivery, so consumers must be idempotent.
  */
-final readonly class DatabaseOutboxLeaseStore implements OutboxLeaseRepository, OutboxDispatchPrecondition
+final readonly class DatabaseOutboxLeaseStore implements OutboxDispatchPrecondition, OutboxLeaseRepository
 {
     public function __construct(
         private Connection $connection,
