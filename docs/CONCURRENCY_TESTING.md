@@ -38,3 +38,15 @@ composer test:concurrency
 - Recovery after loss of both claim token and persisted provider state.
 
 Any failed CI test is a **release blocker**, not something to ignore.
+
+## Fault injection: worker termination
+
+The OutboxDatabaseTest suite starts a separate PHP process, waits until it
+commits a lease, and terminates that process before acknowledgement. The
+parent verifies that the lease remains durable, advances the expiry timestamp
+in the disposable test database, and confirms a new lease can finish the
+message. This covers the **reserved-but-not-acknowledged** crash point.
+
+It does not simulate a remote provider accepting a publish immediately before
+the process dies. That remains an end-to-end test requirement, since a retry
+in that window can deliver a duplicate.
