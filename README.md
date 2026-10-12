@@ -93,6 +93,16 @@ according to provider semantics. A provider can charge successfully even when lo
 completion fails. Do not treat failed `complete()` as grounds for retrying the charge.
 See [RFC-001](docs/RFC-001-CORE.md) and [threat model](docs/THREAT_MODEL.md).
 
+## Experimental reconciliation inspection (in development)
+
+A provider-specific `Reconciler` may **read** the external state of an operation
+explicitly marked `requires_reconciliation`. `ReconciliationInspector` returns
+bounded, typed `ReconciliationEvidence` and cannot finalize or replay anything.
+The caller must authenticate and authorize the inspection and use a read-only
+provider lookup. This is intentionally **not** an automated recovery system.
+
+See [RFC-002](docs/RFC-002-READ_ONLY.md) for the API and limits.
+
 ## Correctness and versioning policy
 
 - Never repeat external effects when an existing operation is processing or unknown.
