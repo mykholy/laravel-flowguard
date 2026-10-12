@@ -91,3 +91,7 @@ jobs:
             composer require --dev 'orchestra/testbench:^11.0' 'laravel/framework:^13.0' --with-all-dependencies --no-interaction --no-progress
           fi
       - run: composer test:concurrency
+      - name: Measure outbox recording on disposable database
+        env:
+          FLOWGUARD_BENCH_ITERATIONS: '250'
+        run: php benchmarks/outbox-record.php
