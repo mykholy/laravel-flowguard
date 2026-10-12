@@ -50,3 +50,16 @@ message. This covers the **reserved-but-not-acknowledged** crash point.
 It does not simulate a remote provider accepting a publish immediately before
 the process dies. That remains an end-to-end test requirement, since a retry
 in that window can deliver a duplicate.
+
+## Ambiguous external acknowledgement
+
+The AtLeastOnceHandoffTest simulates a receiver accepting a published message
+and the publisher then throwing due to a lost acknowledgement. The dispatcher
+releases the source lease. A second attempt delivers the identical message ID
+again, and the downstream inbox accepts it as a duplicate without creating
+another processing signal.
+
+This is a deterministic integration fixture, **not** proof about any payment
+gateway or other third-party service. Production consumers must enforce the same
+stable deduplication key, and providers that lack such a contract remain an
+integration-specific risk.
