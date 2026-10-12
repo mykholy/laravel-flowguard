@@ -47,7 +47,7 @@ the same database transaction boundaries or use immutable signed provenance.
 
 - Row must still be requires_reconciliation; operation row is locked before
   checks, and the final update compares the expected status.
-- Selected evidence must be the latest journal observation by timestamp/id.
+- Selected evidence must be the latest journal observation by timestamp; ties are rejected.
 - Evidence must say confirmed_success or confirmed_failure, never inconclusive.
 - Any opposing confirmed evidence, even older, blocks resolution entirely.
 - Observation must be no older than 900 seconds (configurable constructor
@@ -63,8 +63,8 @@ the same database transaction boundaries or use immutable signed provenance.
 
 ## Remaining release blockers
 
-Concurrency competition between two separate reviewer processes on MySQL and
-PostgreSQL, database crash injection before/after decision audit write, provider
+Expanded and repeated concurrency stress beyond the initial independent-process
+MySQL/PostgreSQL test, database crash injection before/after decision audit write, provider
 authenticity, production authorization/tenant isolation, lifecycle and retention
 policies, and independent security review. The latest-evidence tie-breaker is
 stable in a single transaction but same-microsecond ordering may reject valid
