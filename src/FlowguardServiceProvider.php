@@ -6,6 +6,7 @@ namespace Mykholy\Flowguard;
 
 use Illuminate\Support\ServiceProvider;
 use Mykholy\Flowguard\Console\DiagnoseFlowguard;
+use Mykholy\Flowguard\Console\InspectOutbox;
 use Mykholy\Flowguard\Console\ListStaleOperations;
 use Mykholy\Flowguard\Contracts\OperationStore;
 use Mykholy\Flowguard\Infrastructure\DatabaseOperationStore;
@@ -32,7 +33,7 @@ final class FlowguardServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         if ($this->app->runningInConsole()) {
-            $this->commands([DiagnoseFlowguard::class, ListStaleOperations::class]);
+            $this->commands([DiagnoseFlowguard::class, InspectOutbox::class, ListStaleOperations::class]);
         }
         $this->publishes([__DIR__.'/../config/flowguard.php' => config_path('flowguard.php')], 'flowguard-config');
     }
