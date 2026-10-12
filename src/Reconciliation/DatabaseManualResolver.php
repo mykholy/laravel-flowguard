@@ -82,10 +82,22 @@ final readonly class DatabaseManualResolver
             /** @var stdClass|null $latest */
             $latest = $this->connection->table($this->evidenceTable)
                 ->where('operation_id', $operationId)
-                ->orderByDesc('created_at')->orderByDesc('id')->first();
+                ->where('id', $evidenceId)->first();
 
-            if ($latest === null || ! hash_equals((string) $latest->id, $evidenceId)) {
-                throw new ResolutionRejected('Evidence is missing or not the latest observation.');
+            if ($latest === null) {
+                throw new ResolutionRejected('Selected evidence does not exist for this operation.');
+            }
+
+            // UUID order is NOT insert order. Equal-timestamp events are
+            // ambiguous, so reject instead of guessing which observation won.
+            $supersededOrAmbiguous = $this->connection->table($this->evidenceTable)
+                ->where('operation_id', $operationId)
+                ->where('id', '<>', $evidenceId)
+                ->where('created_at', '>=', (string) $latest->created_at)
+                ->exists();
+
+            if ($supersededOrAmbiguous) {
+                throw new ResolutionRejected('Newer or ambiguously ordered evidence requires further review.');
             }
 
             $outcome = ReconciliationOutcome::from((string) $latest->outcome);
