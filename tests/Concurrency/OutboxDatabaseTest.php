@@ -229,4 +229,85 @@ final class OutboxDatabaseTest extends TestCase
             }
         }
     }
+
+    public function test_killed_worker_leaves_recoverable_fenced_lease(): void
+    {
+        if (! function_exists('proc_open')) {
+            self::markTestSkipped('proc_open is required for crash injection.');
+        }
+
+        $this->db->transaction(function (): void {
+            (new DatabaseOutboxRecorder($this->db, $this->outbox))
+                ->record('tenant.42:orders', 'crash-after-reservation', 'order.paid', 'order-42');
+        });
+
+        $ready = sys_get_temp_dir().'/flowguard-crash-'.bin2hex(random_bytes(12));
+        $env = array_merge($_ENV, [
+            'FLOWGUARD_CONCURRENCY_TEST' => '1',
+            'FLOWGUARD_TEST_DATABASE' => 'flowguard_ci',
+            'FLOWGUARD_TEST_DRIVER' => (string) getenv('FLOWGUARD_TEST_DRIVER'),
+            'FLOWGUARD_TEST_HOST' => (string) getenv('FLOWGUARD_TEST_HOST'),
+            'FLOWGUARD_TEST_PORT' => (string) getenv('FLOWGUARD_TEST_PORT'),
+            'FLOWGUARD_TEST_USERNAME' => (string) getenv('FLOWGUARD_TEST_USERNAME'),
+            'FLOWGUARD_TEST_PASSWORD' => (string) getenv('FLOWGUARD_TEST_PASSWORD'),
+            'FG_CRASH_OUTBOX_TABLE' => $this->outbox,
+            'FG_CRASH_READY_PATH' => $ready,
+        ]);
+
+        $pipes = [];
+        $process = proc_open([PHP_BINARY, __DIR__.'/outbox-crash-worker.php'], [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ], $pipes, dirname(__DIR__, 2), $env);
+
+        if (! is_resource($process)) {
+            throw new RuntimeException('Unable to launch fault-injection worker.');
+        }
+
+        fclose($pipes[0]);
+
+        try {
+            $deadline = microtime(true) + 15;
+            while (! file_exists($ready) && microtime(true) < $deadline) {
+                usleep(10000);
+            }
+
+            if (! file_exists($ready)) {
+                throw new RuntimeException('Worker failed to acquire the lease before timeout.');
+            }
+
+            proc_terminate($process);
+            self::assertSame('leased', $this->db->table($this->outbox)->value('status'));
+            self::assertSame(1, (int) $this->db->table($this->outbox)->value('delivery_attempts'));
+
+            // Simulate passage of the TTL without slowing the test.
+            $this->db->table($this->outbox)->update([
+                'lease_expires_at' => '2020-01-01 00:00:00.000000',
+            ]);
+
+            $lease = (new DatabaseOutboxLeaseStore($this->db, $this->outbox))->reserve(60);
+            self::assertNotNull($lease);
+            self::assertSame(2, $lease->attempt);
+
+            (new DatabaseOutboxLeaseStore($this->db, $this->outbox))->acknowledge($lease);
+            self::assertSame('delivered', $this->db->table($this->outbox)->value('status'));
+        } finally {
+            @unlink($ready);
+
+            if (is_resource($process)) {
+                proc_terminate($process);
+            }
+
+            foreach ($pipes as $pipe) {
+                if (is_resource($pipe)) {
+                    fclose($pipe);
+                }
+            }
+
+            if (is_resource($process)) {
+                proc_close($process);
+            }
+        }
+    }
 }
