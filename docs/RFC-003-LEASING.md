@@ -9,17 +9,22 @@ database connection** as its outbox recorder.
 
     $lease = $store->reserve(60);
 
-    if ($lease !== null) {
-        try {
-            // Publisher must be idempotent and load an authorized snapshot
-            // using $lease->scope, $lease->topic, $lease->subjectReference.
-            $publisher->publish($lease);
-            $store->acknowledge($lease);
-        } catch (\Throwable $exception) {
-            // Map the exception to a safe machine code; never store raw text.
-            $store->release($lease, 'publish_failed', 120);
-        }
+    if ($lease === null) {
+        return;
     }
+
+    try {
+        // Publisher must be idempotent and load an authorized snapshot
+        // using $lease->scope, $lease->topic, $lease->subjectReference.
+        $publisher->publish($lease);
+    } catch (\Throwable $exception) {
+        // Map the exception to a safe machine code; never store raw text.
+        $store->release($lease, 'publish_failed', 120);
+        return;
+    }
+
+    // Acknowledge only after publish succeeds. Handle lease loss separately.
+    $store->acknowledge($lease);
 
 This is a usage illustration, **not a built-in worker**. Do not blindly treat
 LeaseLost as a publish failure: the lease may have expired and another worker
