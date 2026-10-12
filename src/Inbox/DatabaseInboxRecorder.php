@@ -46,7 +46,11 @@ final readonly class DatabaseInboxRecorder
         }
 
         // Fingerprint the verified payload, but never persist the body.
-        $identity = OperationIdentity::from('inbox', $eventId, $payload);
+        $identity = OperationIdentity::from('inbox', $eventId, [
+            'payload' => $payload,
+            'topic' => $topic,
+            'subject' => $subjectReference,
+        ]);
 
         try {
             return $this->connection->transaction(function () use (
