@@ -8,6 +8,7 @@ use DateInterval;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Builder;
 use InvalidArgumentException;
+use Mykholy\Flowguard\Contracts\OutboxLeaseRepository;
 use Mykholy\Flowguard\Infrastructure\UtcDatabaseClock;
 use stdClass;
 
@@ -17,7 +18,7 @@ use stdClass;
  * A publisher must execute outside the reservation transaction. Crashes may
  * cause redelivery, so consumers must be idempotent.
  */
-final readonly class DatabaseOutboxLeaseStore
+final readonly class DatabaseOutboxLeaseStore implements OutboxLeaseRepository
 {
     public function __construct(
         private Connection $connection,

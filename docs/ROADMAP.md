@@ -29,7 +29,8 @@
 - [x] Transactional outbox recording boundary with MySQL/PostgreSQL tests
 - [x] Initial reservation, fencing, acknowledgement and bounded retry primitives
 - [ ] Independent-process lease contention and fault-injection tests
-- [ ] Publisher integration with at-least-once delivery and consumer idempotency
+- [x] Single-delivery publisher contract and orchestration (host-supplied publisher)
+- [ ] Production publisher example, timeouts and consumer idempotency validation
 - [ ] Durable inbound event inbox
 - [ ] Optional UI without forced Filament or Livewire dependency
 - [ ] Sandbox-only example integrations and versioned docs
