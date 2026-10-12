@@ -1,0 +1,11 @@
+/vendor/
+/.phpunit.cache/
+/.phpunit-watcher.yml
+/.phpunit.result.cache
+/.phpactor.json
+/.phpactor.yml
+/.idea/
+/.vscode/
+/composer.lock
+/.env
+/coverage/
