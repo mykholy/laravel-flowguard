@@ -50,6 +50,17 @@ final class DatabaseInboxRecorderTest extends TestCase
         $this->receive(['amount_minor' => 200]);
     }
 
+    public function test_same_event_id_cannot_be_rerouted_to_another_topic(): void
+    {
+        $this->receive(['paid' => true]);
+
+        $this->expectException(IdempotencyConflict::class);
+        (new DatabaseInboxRecorder(DB::connection()))->receive(
+            'tenant.42:webhooks', 'gateway-event-1', ['paid' => true],
+            'payment.refunded', 'payment-1',
+        );
+    }
+
     public function test_different_tenants_can_receive_same_provider_event_id(): void
     {
         $first = $this->receive(['paid' => true], 'tenant.1:webhooks');
