@@ -8,6 +8,9 @@ use DateInterval;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Builder;
 use InvalidArgumentException;
+use LogicException;
+use Mykholy\Flowguard\Contracts\OutboxDispatchPrecondition;
+use Mykholy\Flowguard\Contracts\OutboxLeaseRepository;
 use Mykholy\Flowguard\Infrastructure\UtcDatabaseClock;
 use stdClass;
 
@@ -17,7 +20,7 @@ use stdClass;
  * A publisher must execute outside the reservation transaction. Crashes may
  * cause redelivery, so consumers must be idempotent.
  */
-final readonly class DatabaseOutboxLeaseStore
+final readonly class DatabaseOutboxLeaseStore implements OutboxDispatchPrecondition, OutboxLeaseRepository
 {
     public function __construct(
         private Connection $connection,
@@ -33,8 +36,17 @@ final readonly class DatabaseOutboxLeaseStore
         }
     }
 
+    public function assertDispatchAllowed(): void
+    {
+        if ($this->connection->transactionLevel() !== 0) {
+            throw new LogicException('Outbox delivery cannot run inside a business transaction.');
+        }
+    }
+
     public function reserve(int $leaseSeconds = 60): ?OutboxLease
     {
+        $this->assertDispatchAllowed();
+
         if ($leaseSeconds < 5 || $leaseSeconds > 3600) {
             throw new InvalidArgumentException('Lease duration must be between 5 and 3600 seconds.');
         }
