@@ -17,10 +17,11 @@ final class ListStaleOperations extends Command
 
     public function handle(DatabaseManager $database): int
     {
-        $minutesOption = (string) $this->option('minutes');
-        $limitOption = (string) $this->option('limit');
+        $minutesOption = $this->option('minutes');
+        $limitOption = $this->option('limit');
 
-        if (ctype_digit($minutesOption) === false || (int) $minutesOption < 1 || (int) $minutesOption > 10080 ||
+        if (! is_string($minutesOption) || ! is_string($limitOption) ||
+            ctype_digit($minutesOption) === false || (int) $minutesOption < 1 || (int) $minutesOption > 10080 ||
             ctype_digit($limitOption) === false || (int) $limitOption < 1 || (int) $limitOption > 100) {
             $this->error('Minutes must be 1-10080; limit must be 1-100.');
             return self::FAILURE;
