@@ -43,6 +43,25 @@ final readonly class DatabaseManualResolver
         }
     }
 
+    private function databaseTime(): DateTimeImmutable
+    {
+        $expression = match ($this->connection->getDriverName()) {
+            'mysql' => 'UTC_TIMESTAMP(6)',
+            'pgsql' => "(clock_timestamp() AT TIME ZONE 'UTC')",
+            'sqlite' => "strftime('%Y-%m-%d %H:%M:%f', 'now')",
+            default => throw new InvalidArgumentException('Unsupported database driver for manual resolution.'),
+        };
+
+        /** @var stdClass|null $row */
+        $row = $this->connection->selectOne('SELECT '.$expression.' AS current_time');
+
+        if ($row === null || ! is_string($row->current_time)) {
+            throw new ResolutionRejected('Could not read the database clock.');
+        }
+
+        return new DateTimeImmutable($row->current_time, new DateTimeZone('UTC'));
+    }
+
     public function resolve(
         string $operationId,
         string $evidenceId,
@@ -119,7 +138,7 @@ final readonly class DatabaseManualResolver
             }
 
             $observedAt = new DateTimeImmutable((string) $latest->observed_at, new DateTimeZone('UTC'));
-            $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+            $now = $this->databaseTime();
             $ageSeconds = (float) $now->format('U.u') - (float) $observedAt->format('U.u');
 
             if ($ageSeconds < -60 || $ageSeconds > $this->maxEvidenceAgeSeconds) {
