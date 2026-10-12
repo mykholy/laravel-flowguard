@@ -8,6 +8,7 @@ use DateInterval;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Builder;
 use InvalidArgumentException;
+use LogicException;
 use Mykholy\Flowguard\Contracts\OutboxLeaseRepository;
 use Mykholy\Flowguard\Infrastructure\UtcDatabaseClock;
 use stdClass;
@@ -36,6 +37,10 @@ final readonly class DatabaseOutboxLeaseStore implements OutboxLeaseRepository
 
     public function reserve(int $leaseSeconds = 60): ?OutboxLease
     {
+        if ($this->connection->transactionLevel() !== 0) {
+            throw new LogicException('Outbox delivery cannot run inside a business transaction.');
+        }
+
         if ($leaseSeconds < 5 || $leaseSeconds > 3600) {
             throw new InvalidArgumentException('Lease duration must be between 5 and 3600 seconds.');
         }
