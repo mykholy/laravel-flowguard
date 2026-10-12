@@ -17,8 +17,10 @@
 - [x] Opt-in evidence journal with application authorization and transactional append
 - [x] No raw provider-reference storage in journal records
 - [ ] Authorization and tenant isolation end-to-end example
-- [ ] Conflict-aware, two-person approval and CAS resolution design
-- [ ] Provider staleness semantics and stress tests for review races
+- [x] Initial conflict-aware CAS classification with mandatory host-app approval contract
+- [ ] Built-in approval collection is intentionally out of scope; validate a real host implementation
+- [x] Initial provider evidence freshness guards and independent-process review race tests
+- [ ] Extended stress and crash injection for all supported engines
 - [ ] Evidence retention, privacy, and archival policy
 
 ## Phase C — ecosystem
