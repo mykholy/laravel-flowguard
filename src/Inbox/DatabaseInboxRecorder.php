@@ -84,7 +84,7 @@ final readonly class DatabaseInboxRecorder
                 throw $exception;
             }
 
-            if (! hash_equals((string) $existing->payload_hash, $identity->payloadHash)) {
+            if (hash_equals((string) $existing->payload_hash, $identity->payloadHash) === false) {
                 throw new IdempotencyConflict;
             }
 
