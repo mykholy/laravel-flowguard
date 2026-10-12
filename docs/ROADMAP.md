@@ -1,34 +1,34 @@
 # Roadmap (no release promise)
 
-## Phase A — trustworthy kernel [partial]
+## Phase A — trustworthy kernel [pre-alpha]
 
-- [x] Explicit operation states and claim capability
+- [x] Explicit operation states and owner-only claim capability
 - [x] Durable uniqueness and immutable request fingerprint
 - [x] Conditional finalization and unknown-outcome state
-- [x] Laravel auto-discovery and migration
-- [x] Unit and SQLite feature test definitions
-- [ ] Run dependency-powered feature suite in CI
-- [ ] Concurrency integration tests against MySQL and PostgreSQL
-- [ ] Crash/fault injection and DB outage tests
+- [x] Laravel discovery and migrations
+- [x] PHP 8.3/8.4 and MySQL/PostgreSQL initial CI coverage
+- [ ] Worker-kill fault injection and larger stress runs
 - [ ] Benchmark write path and validate operational cost
 
-## Phase B — manual recovery
+## Phase B — safe reconciliation [partial]
 
-- [x] Read-only stale-operation inspector (limited results; no pagination yet)
-- [ ] Reconciler contract and provider-neutral resolution outcomes
-- [ ] Immutable operation timeline
-- [ ] Authorization and two-step replay approvals
-- [ ] Retention, privacy, encryption guidance
+- [x] Read-only stale operation inspector (limited results)
+- [x] Reconciler contract and typed, bounded evidence
+- [x] Opt-in evidence journal with application authorization and transactional append
+- [x] No raw provider-reference storage in journal records
+- [ ] Authorization and tenant isolation end-to-end example
+- [ ] Conflict-aware, two-person approval and CAS resolution design
+- [ ] Provider staleness semantics and stress tests for review races
+- [ ] Evidence retention, privacy, and archival policy
 
 ## Phase C — ecosystem
 
-- [ ] Optional Laravel Queue and Spatie Webhook Client integrations
-- [ ] Outbox / inbox adapters with delivery guarantees documented
-- [ ] Optional user interface (no forced Filament / Livewire dependency)
-- [ ] Example integrations (sandbox only)
-- [ ] Versioned documentation, migration upgrade test suite
+- [ ] Optional Laravel Queue / Spatie Webhook Client adapters
+- [ ] Transactional outbox / inbox with documented at-least-once delivery
+- [ ] Optional UI without forced Filament or Livewire dependency
+- [ ] Sandbox-only example integrations and versioned docs
 
-## Release gates
+## Release gate
 
-No `v1.0` before multi-database concurrency verification, failure injection,
-security review, version support matrix and at least one independent adopter.
+No v1.0 before multi-database failure injection, explicit recovery design,
+security review, version compatibility proof and an independent adopter.
