@@ -146,6 +146,15 @@ final class DatabaseManualResolverTest extends TestCase
         $this->resolve($operationId, $evidenceId);
     }
 
+    public function test_future_dated_provider_evidence_is_rejected(): void
+    {
+        $operationId = $this->unknownOperation();
+        $evidenceId = $this->evidence($operationId, ReconciliationOutcome::ConfirmedSuccess, -3600);
+
+        $this->expectException(ResolutionRejected::class);
+        $this->resolve($operationId, $evidenceId);
+    }
+
     public function test_conflicting_confirmed_outcomes_block_finalization(): void
     {
         $operationId = $this->unknownOperation();
