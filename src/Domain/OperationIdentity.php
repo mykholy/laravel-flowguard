@@ -41,19 +41,19 @@ final readonly class OperationIdentity
     }
 
     /**
-     * @param array<string|int, mixed> $items
+     * @param  array<string|int, mixed>  $items
      * @return array<string|int, mixed>
      */
     private static function canonicalize(array $items): array
     {
-        if (!array_is_list($items)) {
+        if (! array_is_list($items)) {
             ksort($items, SORT_STRING);
         }
 
         foreach ($items as $key => $value) {
             if (is_array($value)) {
                 $items[$key] = self::canonicalize($value);
-            } elseif (!is_null($value) && !is_scalar($value)) {
+            } elseif (! is_null($value) && ! is_scalar($value)) {
                 throw new InvalidArgumentException('Payload must contain JSON-native scalars and arrays only.');
             }
         }

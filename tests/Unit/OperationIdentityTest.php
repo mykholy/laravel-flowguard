@@ -36,7 +36,7 @@ final class OperationIdentityTest extends TestCase
     public function test_objects_are_rejected_to_keep_fingerprints_unambiguous(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        OperationIdentity::from('payments', 'key', ['object' => new \stdClass()]);
+        OperationIdentity::from('payments', 'key', ['object' => new \stdClass]);
     }
 
     public function test_overlarge_payload_is_rejected(): void

@@ -61,8 +61,8 @@ final readonly class DatabaseOperationStore implements OperationStore
                 throw new RuntimeException('Operation insert was not persisted. Check the database and migration.');
             }
 
-            if (!hash_equals((string) $row->payload_hash, $identity->payloadHash)) {
-                throw new IdempotencyConflict();
+            if (! hash_equals((string) $row->payload_hash, $identity->payloadHash)) {
+                throw new IdempotencyConflict;
             }
 
             return new Acquisition($this->snapshot($row), $inserted === 1 ? new Claim($id, $secret) : null);
@@ -105,7 +105,7 @@ final readonly class DatabaseOperationStore implements OperationStore
             ]);
 
         if ($updated !== 1) {
-            throw new InvalidTransition();
+            throw new InvalidTransition;
         }
 
         $row = $this->connection->table($this->table)->where('id', $claim->operationId)->first();
@@ -121,7 +121,7 @@ final readonly class DatabaseOperationStore implements OperationStore
     {
         $result = $row->result_json === null ? null : json_decode((string) $row->result_json, true, 512, JSON_THROW_ON_ERROR);
 
-        if ($result !== null && !is_array($result)) {
+        if ($result !== null && ! is_array($result)) {
             throw new RuntimeException('Stored result metadata is malformed.');
         }
 

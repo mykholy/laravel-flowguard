@@ -24,6 +24,7 @@ final class ListStaleOperations extends Command
             ctype_digit($minutesOption) === false || (int) $minutesOption < 1 || (int) $minutesOption > 10080 ||
             ctype_digit($limitOption) === false || (int) $limitOption < 1 || (int) $limitOption > 100) {
             $this->error('Minutes must be 1-10080; limit must be 1-100.');
+
             return self::FAILURE;
         }
 

@@ -82,7 +82,7 @@ final class DatabaseRaceTest extends TestCase
     /** @return list<array{acquired: bool, id: string, status: string}> */
     private function race(int $count, string $key): array
     {
-        if (!function_exists('proc_open')) {
+        if (! function_exists('proc_open')) {
             self::markTestSkipped('proc_open is required for multiprocess race testing.');
         }
         $gate = sys_get_temp_dir().'/flowguard-gate-'.bin2hex(random_bytes(12));
@@ -108,7 +108,7 @@ final class DatabaseRaceTest extends TestCase
                     1 => ['pipe', 'w'],
                     2 => ['pipe', 'w'],
                 ], $pipes, dirname(__DIR__, 2), $env);
-                if (!is_resource($process)) {
+                if (! is_resource($process)) {
                     throw new RuntimeException('Cannot spawn race test worker.');
                 }
                 fclose($pipes[0]);
@@ -127,12 +127,13 @@ final class DatabaseRaceTest extends TestCase
                     throw new RuntimeException('Concurrency worker failed: '.$err);
                 }
                 $decoded = json_decode((string) $out, true, 512, JSON_THROW_ON_ERROR);
-                if (!is_array($decoded)) {
+                if (! is_array($decoded)) {
                     throw new RuntimeException('Worker did not return a JSON operation snapshot.');
                 }
                 $results[] = $decoded;
             }
             $workers = [];
+
             return $results;
         } finally {
             @unlink($gate);

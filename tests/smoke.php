@@ -5,7 +5,7 @@ declare(strict_types=1);
 // Zero-dependency domain smoke test. NOT a substitute for PHPUnit + database CI.
 spl_autoload_register(static function (string $class): void {
     $prefix = 'Mykholy\\Flowguard\\';
-    if (!str_starts_with($class, $prefix)) {
+    if (! str_starts_with($class, $prefix)) {
         return;
     }
     $path = dirname(__DIR__).'/src/'.str_replace('\\', '/', substr($class, strlen($prefix))).'.php';
@@ -14,20 +14,20 @@ spl_autoload_register(static function (string $class): void {
     }
 });
 
+use Mykholy\Flowguard\Contracts\OperationStore;
 use Mykholy\Flowguard\Domain\Acquisition;
 use Mykholy\Flowguard\Domain\Claim;
 use Mykholy\Flowguard\Domain\OperationIdentity;
 use Mykholy\Flowguard\Domain\OperationSnapshot;
 use Mykholy\Flowguard\Domain\OperationStatus;
 use Mykholy\Flowguard\Flowguard;
-use Mykholy\Flowguard\Contracts\OperationStore;
 
 $assertions = 0;
 function expect(bool $condition, string $message): void
 {
     global $assertions;
     $assertions++;
-    if (!$condition) {
+    if (! $condition) {
         throw new RuntimeException('FAIL: '.$message);
     }
 }
@@ -37,7 +37,7 @@ $b = OperationIdentity::from('payments.capture', 'k', ['a' => ['x' => 1, 'z' => 
 expect($a->payloadHash === $b->payloadHash, 'canonical payload hashing');
 expect($a->keyHash === $b->keyHash, 'stable key hashing');
 try {
-    OperationIdentity::from('payments', 'key', ['object' => new stdClass()]);
+    OperationIdentity::from('payments', 'key', ['object' => new stdClass]);
     throw new RuntimeException('Expected invalid object exception.');
 } catch (InvalidArgumentException $expected) {
     $assertions++;
@@ -49,17 +49,22 @@ try {
     $assertions++;
 }
 
-$store = new class implements OperationStore {
+$store = new class implements OperationStore
+{
     public int $acquisitions = 0;
+
     public function acquire(OperationIdentity $identity): Acquisition
     {
         $this->acquisitions++;
+
         return new Acquisition(new OperationSnapshot('id', $identity->scope, OperationStatus::Processing, null, null), new Claim('id', 'secret'));
     }
+
     public function complete(Claim $claim, array $result): OperationSnapshot
     {
         return new OperationSnapshot($claim->operationId, 'payment', OperationStatus::Completed, $result, null);
     }
+
     public function requireReconciliation(Claim $claim, string $reason): OperationSnapshot
     {
         return new OperationSnapshot($claim->operationId, 'payment', OperationStatus::RequiresReconciliation, null, $reason);

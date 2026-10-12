@@ -11,13 +11,13 @@ try {
     $table = getenv('FLOWGUARD_TEST_TABLE');
     $gate = getenv('FLOWGUARD_TEST_GATE');
     $key = getenv('FLOWGUARD_TEST_KEY');
-    if (!is_string($table) || !preg_match('/^fg_race_[a-f0-9]{12}$/D', $table) || !is_string($gate) || !is_string($key)) {
+    if (! is_string($table) || ! preg_match('/^fg_race_[a-f0-9]{12}$/D', $table) || ! is_string($gate) || ! is_string($key)) {
         throw new InvalidArgumentException('Invalid worker test inputs.');
     }
 
     // Gate all processes just before the unique-key contention point.
     $deadline = microtime(true) + 20;
-    while (!file_exists($gate)) {
+    while (! file_exists($gate)) {
         if (microtime(true) >= $deadline) {
             throw new RuntimeException('Timed out waiting for test start gate.');
         }

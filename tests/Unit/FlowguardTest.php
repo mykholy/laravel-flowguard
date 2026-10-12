@@ -6,10 +6,7 @@ namespace Mykholy\Flowguard\Tests\Unit;
 
 use InvalidArgumentException;
 use Mykholy\Flowguard\Contracts\OperationStore;
-use Mykholy\Flowguard\Domain\Acquisition;
 use Mykholy\Flowguard\Domain\Claim;
-use Mykholy\Flowguard\Domain\OperationIdentity;
-use Mykholy\Flowguard\Domain\OperationSnapshot;
 use Mykholy\Flowguard\Flowguard;
 use PHPUnit\Framework\TestCase;
 
