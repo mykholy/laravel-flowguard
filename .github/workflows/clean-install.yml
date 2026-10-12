@@ -1,0 +1,48 @@
+name: Clean Laravel Installation
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  installation:
+    name: Fresh Laravel ${{ matrix.laravel }} · PHP 8.3
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        laravel: ['12', '13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, sqlite3, dom, xml
+          coverage: none
+          tools: composer:v2
+      - name: Create clean Laravel application
+        run: composer create-project "laravel/laravel:^${{ matrix.laravel }}" smoke-app --no-interaction --prefer-dist --no-progress
+      - name: Install Flowguard from local source tree
+        working-directory: smoke-app
+        run: |
+          composer config repositories.flowguard path ../
+          composer require 'mykholy/laravel-flowguard:@dev' --no-interaction --with-all-dependencies --no-progress
+      - name: Initialize disposable SQLite database
+        working-directory: smoke-app
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+        run: |
+          touch database/database.sqlite
+          php artisan key:generate
+          php artisan migrate --force
+          php artisan flowguard:doctor
+      - name: Verify framework integration
+        working-directory: smoke-app
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+        run: php ../tests/Installation/verify.php
