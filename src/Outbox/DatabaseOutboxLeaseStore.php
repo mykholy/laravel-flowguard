@@ -7,7 +7,6 @@ namespace Mykholy\Flowguard\Outbox;
 use DateInterval;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Mykholy\Flowguard\Infrastructure\UtcDatabaseClock;
 use stdClass;
