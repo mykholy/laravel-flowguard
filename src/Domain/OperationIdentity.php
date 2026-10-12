@@ -40,7 +40,10 @@ final readonly class OperationIdentity
         return new self($scope, hash('sha256', $key), hash('sha256', $encoded));
     }
 
-    /** @return array<string|int, mixed> */
+    /**
+     * @param array<string|int, mixed> $items
+     * @return array<string|int, mixed>
+     */
     private static function canonicalize(array $items): array
     {
         if (!array_is_list($items)) {
