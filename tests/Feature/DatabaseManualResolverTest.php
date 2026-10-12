@@ -6,6 +6,7 @@ namespace Mykholy\Flowguard\Tests\Feature;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Mykholy\Flowguard\Contracts\EvidenceAuthorization;
 use Mykholy\Flowguard\Contracts\ResolutionAuthorization;
@@ -197,7 +198,7 @@ final class DatabaseManualResolverTest extends TestCase
         try {
             $this->resolve($operationId, $evidenceId);
             self::fail('Expected a missing audit table to abort the transaction.');
-        } catch (\Illuminate\Database\QueryException) {
+        } catch (QueryException) {
             // Transaction must roll back the operation status update.
         }
 
