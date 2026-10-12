@@ -31,6 +31,7 @@ jobs:
           else
             composer require --dev 'orchestra/testbench:^11.0' 'laravel/framework:^13.0' --with-all-dependencies --no-interaction --no-progress
           fi
+      - run: composer audit --no-dev
       - run: composer test
       - run: composer analyse
       - run: composer format-check
