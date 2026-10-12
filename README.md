@@ -44,6 +44,7 @@ To customize the connection/table, publish the config:
 ```bash
 php artisan vendor:publish --tag=flowguard-config
 php artisan migrate
+php artisan flowguard:doctor
 php artisan flowguard:stale --minutes=15 --limit=50
 ```
 
