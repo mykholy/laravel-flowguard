@@ -145,6 +145,6 @@ final readonly class DatabaseOutboxLeaseStore
             ->where('id', $lease->id)
             ->where('status', 'leased')
             ->where('lease_hash', $lease->tokenHash())
-            ->whereRaw('lease_expires_at > '.UtcDatabaseClock::expression($this->connection));
+            ->whereRaw($this->connection->raw('lease_expires_at > '.UtcDatabaseClock::expression($this->connection)));
     }
 }
