@@ -137,6 +137,18 @@ an independently reviewed host-app policy.
 
 See [manual resolution RFC](docs/RFC-002-MANUAL-RESOLUTION.md).
 
+## Transactional outbox recording (experimental)
+
+`DatabaseOutboxRecorder` records a small, durable signal in the same database
+transaction as a business change. It refuses to record outside an active
+transaction. The caller must use the **same database connection** for both
+writes and scope event identities by tenant. Duplicates fail through a database
+unique constraint.
+
+This increment **does not dispatch messages**. Recorded rows remain pending;
+leasing, retries and at-least-once delivery are follow-up work.
+See [outbox recording design](docs/RFC-003-OUTBOX.md).
+
 ## Correctness and versioning policy
 
 - Never repeat external effects when an existing operation is processing or unknown.
