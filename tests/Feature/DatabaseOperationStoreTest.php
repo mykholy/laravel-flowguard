@@ -36,6 +36,23 @@ final class DatabaseOperationStoreTest extends TestCase
         self::assertSame(['provider_reference' => 'p-123'], $after->operation->result);
     }
 
+    public function test_duplicate_claim_inside_an_outer_transaction_does_not_poison_it(): void
+    {
+        $guard = $this->app->make(Flowguard::class);
+
+        DB::transaction(function () use ($guard): void {
+            $owner = $guard->begin('orders.place', 'outer-transaction-key', ['quantity' => 1]);
+            $duplicate = $guard->begin('orders.place', 'outer-transaction-key', ['quantity' => 1]);
+
+            self::assertTrue($owner->acquired());
+            self::assertFalse($duplicate->acquired());
+            $guard->complete($owner->claim(), ['status' => 'accepted']);
+        });
+
+        self::assertSame(1, DB::table('flowguard_operations')->count());
+        self::assertSame('completed', DB::table('flowguard_operations')->value('status'));
+    }
+
     public function test_same_key_with_different_payload_fails_closed(): void
     {
         $guard = $this->app->make(Flowguard::class);

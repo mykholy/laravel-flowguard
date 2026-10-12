@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mykholy\Flowguard\Infrastructure;
 
 use Illuminate\Database\Connection;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use JsonException;
@@ -34,39 +35,54 @@ final readonly class DatabaseOperationStore implements OperationStore
 
     public function acquire(OperationIdentity $identity): Acquisition
     {
-        return $this->connection->transaction(function () use ($identity): Acquisition {
-            $id = (string) Str::uuid();
-            $secret = bin2hex(random_bytes(32));
-            $now = now();
+        try {
+            return $this->connection->transaction(function () use ($identity): Acquisition {
+                $id = (string) Str::uuid();
+                $secret = bin2hex(random_bytes(32));
+                $now = now();
 
-            // Unique(scope, key_hash) is the durable arbitration point. Other
-            // contenders wait for the winner's insert to commit.
-            $inserted = $this->connection->table($this->table)->insertOrIgnore([
-                'id' => $id,
-                'scope' => $identity->scope,
-                'key_hash' => $identity->keyHash,
-                'payload_hash' => $identity->payloadHash,
-                'claim_hash' => hash('sha256', $secret),
-                'status' => OperationStatus::Processing->value,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
+                // The database unique index arbitrates competing owners.
+                // Do not use INSERT IGNORE: unrelated write errors must surface.
+                $this->connection->table($this->table)->insert([
+                    'id' => $id,
+                    'scope' => $identity->scope,
+                    'key_hash' => $identity->keyHash,
+                    'payload_hash' => $identity->payloadHash,
+                    'claim_hash' => hash('sha256', $secret),
+                    'status' => OperationStatus::Processing->value,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
 
+                /** @var stdClass|null $row */
+                $row = $this->connection->table($this->table)->where('id', $id)->first();
+
+                if ($row === null) {
+                    throw new RuntimeException('Newly inserted operation could not be read.');
+                }
+
+                return new Acquisition($this->snapshot($row), new Claim($id, $secret));
+            }, 3);
+        } catch (UniqueConstraintViolationException $exception) {
+            // The failed insert transaction has already rolled back. In
+            // PostgreSQL we must not query inside the aborted transaction.
+            /** @var stdClass|null $row */
             $row = $this->connection->table($this->table)
                 ->where('scope', $identity->scope)
                 ->where('key_hash', $identity->keyHash)
                 ->first();
 
             if ($row === null) {
-                throw new RuntimeException('Operation insert was not persisted. Check the database and migration.');
+                throw $exception;
             }
 
             if (! hash_equals((string) $row->payload_hash, $identity->payloadHash)) {
                 throw new IdempotencyConflict;
             }
 
-            return new Acquisition($this->snapshot($row), $inserted === 1 ? new Claim($id, $secret) : null);
-        }, 3);
+            // A duplicate never receives another caller's owner capability.
+            return new Acquisition($this->snapshot($row), null);
+        }
     }
 
     /** @param array<string, mixed> $result */
