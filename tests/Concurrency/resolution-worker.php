@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 use Mykholy\Flowguard\Contracts\ResolutionAuthorization;
@@ -34,7 +35,8 @@ try {
         usleep(10000);
     }
 
-    $policy = new class implements ResolutionAuthorization {
+    $policy = new class implements ResolutionAuthorization
+    {
         public function assertApproved(
             string $initiatorReference,
             string $approverReference,
