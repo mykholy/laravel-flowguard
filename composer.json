@@ -1,0 +1,61 @@
+{
+  "$schema": "https://getcomposer.org/schema.json",
+  "name": "mykholy/laravel-flowguard",
+  "description": "A fail-closed idempotent operation lifecycle for critical Laravel business actions.",
+  "type": "library",
+  "license": "MIT",
+  "keywords": [
+    "laravel",
+    "idempotency",
+    "payments",
+    "webhooks",
+    "reliability",
+    "reconciliation"
+  ],
+  "authors": [
+    {
+      "name": "Ahmed El-Kholy",
+      "homepage": "https://github.com/mykholy"
+    }
+  ],
+  "require": {
+    "php": "^8.3",
+    "illuminate/support": "^12.0 || ^13.0",
+    "illuminate/database": "^12.0 || ^13.0"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^10.0 || ^11.0",
+    "phpunit/phpunit": "^11.5 || ^12.0",
+    "larastan/larastan": "^3.0",
+    "laravel/pint": "^1.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Mykholy\\Flowguard\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Mykholy\\Flowguard\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Mykholy\\Flowguard\\FlowguardServiceProvider"
+      ]
+    }
+  },
+  "scripts": {
+    "test": "phpunit -c phpunit.xml.dist --testsuite Unit,Feature",
+    "analyse": "phpstan analyse -c phpstan.neon.dist --memory-limit=1G",
+    "format": "pint",
+    "format-check": "pint --test",
+    "test:concurrency": "phpunit -c phpunit.xml.dist --testsuite Concurrency"
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
