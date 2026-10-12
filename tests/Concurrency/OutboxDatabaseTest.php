@@ -7,7 +7,9 @@ namespace Mykholy\Flowguard\Tests\Concurrency;
 use Illuminate\Database\Connection;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
+use Mykholy\Flowguard\Outbox\DatabaseOutboxLeaseStore;
 use Mykholy\Flowguard\Outbox\DatabaseOutboxRecorder;
+use Mykholy\Flowguard\Outbox\LeaseLost;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -42,6 +44,12 @@ final class OutboxDatabaseTest extends TestCase
             $table->string('topic', 120);
             $table->string('subject_ref', 128);
             $table->string('status', 20);
+            $table->unsignedInteger('delivery_attempts')->default(0);
+            $table->char('lease_hash', 64)->nullable();
+            $table->dateTime('lease_expires_at', 6)->nullable();
+            $table->dateTime('available_at', 6)->nullable();
+            $table->dateTime('delivered_at', 6)->nullable();
+            $table->string('last_failure_code', 120)->nullable();
             $table->timestamps(6);
             $table->unique(['scope', 'event_key_hash']);
         });
@@ -109,5 +117,116 @@ final class OutboxDatabaseTest extends TestCase
         }
 
         self::assertSame(1, $this->db->table($this->outbox)->count());
+    }
+
+    public function test_expired_leases_rotate_ownership_on_this_database(): void
+    {
+        $recorder = new DatabaseOutboxRecorder($this->db, $this->outbox);
+        $this->db->transaction(function () use ($recorder): void {
+            $recorder->record('tenant.42:orders', 'lease-reclaim', 'order.paid', 'order-1');
+        });
+
+        $store = new DatabaseOutboxLeaseStore($this->db, $this->outbox);
+        $first = $store->reserve(5);
+        self::assertNotNull($first);
+
+        $this->db->table($this->outbox)->update(['lease_expires_at' => '2020-01-01 00:00:00.000000']);
+
+        $second = $store->reserve(60);
+        self::assertNotNull($second);
+        self::assertSame(2, $second->attempt);
+
+        try {
+            $store->acknowledge($first);
+            self::fail('A displaced owner must not acknowledge delivery.');
+        } catch (LeaseLost) {
+            // The second reservation remains valid.
+        }
+
+        $store->acknowledge($second);
+        self::assertSame('delivered', $this->db->table($this->outbox)->value('status'));
+    }
+
+    public function test_parallel_workers_reserve_a_message_only_once(): void
+    {
+        if (! function_exists('proc_open')) {
+            self::markTestSkipped('proc_open is required for the reservation race.');
+        }
+
+        $recorder = new DatabaseOutboxRecorder($this->db, $this->outbox);
+        $this->db->transaction(function () use ($recorder): void {
+            $recorder->record('tenant.42:orders', 'parallel-delivery', 'order.paid', 'order-1');
+        });
+
+        $gate = sys_get_temp_dir().'/flowguard-outbox-'.bin2hex(random_bytes(12));
+        $env = array_merge($_ENV, [
+            'FLOWGUARD_CONCURRENCY_TEST' => '1',
+            'FLOWGUARD_TEST_DATABASE' => 'flowguard_ci',
+            'FLOWGUARD_TEST_DRIVER' => (string) getenv('FLOWGUARD_TEST_DRIVER'),
+            'FLOWGUARD_TEST_HOST' => (string) getenv('FLOWGUARD_TEST_HOST'),
+            'FLOWGUARD_TEST_PORT' => (string) getenv('FLOWGUARD_TEST_PORT'),
+            'FLOWGUARD_TEST_USERNAME' => (string) getenv('FLOWGUARD_TEST_USERNAME'),
+            'FLOWGUARD_TEST_PASSWORD' => (string) getenv('FLOWGUARD_TEST_PASSWORD'),
+            'FG_OUTBOX_RACE_TABLE' => $this->outbox,
+            'FG_OUTBOX_RACE_GATE' => $gate,
+        ]);
+
+        $workers = [];
+
+        try {
+            for ($i = 0; $i < 6; $i++) {
+                $pipes = [];
+                $process = proc_open([PHP_BINARY, __DIR__.'/outbox-worker.php'], [
+                    0 => ['pipe', 'r'],
+                    1 => ['pipe', 'w'],
+                    2 => ['pipe', 'w'],
+                ], $pipes, dirname(__DIR__, 2), $env);
+
+                if (! is_resource($process)) {
+                    throw new RuntimeException('Could not start outbox race worker.');
+                }
+
+                fclose($pipes[0]);
+                $workers[] = [$process, $pipes];
+            }
+
+            touch($gate);
+            $results = [];
+
+            foreach ($workers as [$process, $pipes]) {
+                $output = stream_get_contents($pipes[1]);
+                $error = stream_get_contents($pipes[2]);
+                fclose($pipes[1]);
+                fclose($pipes[2]);
+                $exit = proc_close($process);
+
+                if ($exit !== 0) {
+                    throw new RuntimeException('Outbox race worker failed: '.$error);
+                }
+
+                $results[] = json_decode((string) $output, true, 512, JSON_THROW_ON_ERROR);
+            }
+
+            $workers = [];
+            self::assertCount(6, $results);
+            self::assertSame(1, count(array_filter($results, static fn (array $r): bool => $r['reserved'] === true)));
+            self::assertSame(1, (int) $this->db->table($this->outbox)->value('delivery_attempts'));
+        } finally {
+            @unlink($gate);
+
+            foreach ($workers as [$process, $pipes]) {
+                if (is_resource($process)) {
+                    proc_terminate($process);
+                }
+                foreach ($pipes as $pipe) {
+                    if (is_resource($pipe)) {
+                        fclose($pipe);
+                    }
+                }
+                if (is_resource($process)) {
+                    proc_close($process);
+                }
+            }
+        }
     }
 }
