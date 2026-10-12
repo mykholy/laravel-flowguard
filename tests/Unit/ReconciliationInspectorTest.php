@@ -42,12 +42,12 @@ final class ReconciliationInspectorTest extends TestCase
     public function test_unstructured_evidence_is_rejected(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        new ReconciliationEvidence(ReconciliationOutcome::Inconclusive, 'error: card 4242 4242', 'unknown', new DateTimeImmutable());
+        new ReconciliationEvidence(ReconciliationOutcome::Inconclusive, 'error: card 4242 4242', 'unknown', new DateTimeImmutable);
     }
 
     public function test_control_characters_are_rejected_from_provider_reference(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        new ReconciliationEvidence(ReconciliationOutcome::ConfirmedSuccess, 'gateway', 'found', new DateTimeImmutable(), "reference\nsecond-line");
+        new ReconciliationEvidence(ReconciliationOutcome::ConfirmedSuccess, 'gateway', 'found', new DateTimeImmutable, "reference\nsecond-line");
     }
 }
