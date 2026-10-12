@@ -141,10 +141,16 @@ final readonly class DatabaseOutboxLeaseStore
 
     private function activeLease(OutboxLease $lease): Builder
     {
-        return $this->connection->table($this->table)
+        $query = $this->connection->table($this->table)
             ->where('id', $lease->id)
             ->where('status', 'leased')
-            ->where('lease_hash', $lease->tokenHash())
-            ->whereRaw($this->connection->raw('lease_expires_at > '.UtcDatabaseClock::expression($this->connection)));
+            ->where('lease_hash', $lease->tokenHash());
+
+        return match ($this->connection->getDriverName()) {
+            'mysql' => $query->whereRaw('lease_expires_at > UTC_TIMESTAMP(6)'),
+            'pgsql' => $query->whereRaw("lease_expires_at > (clock_timestamp() AT TIME ZONE 'UTC')"),
+            'sqlite' => $query->whereRaw("lease_expires_at > strftime('%Y-%m-%d %H:%M:%f', 'now')"),
+            default => throw new InvalidArgumentException('Unsupported outbox database driver.'),
+        };
     }
 }
