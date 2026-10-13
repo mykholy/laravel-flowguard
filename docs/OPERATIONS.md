@@ -65,9 +65,9 @@ tokens, attempt counters, retry delays and delivery timestamps; it is not
 a safe replay or rollback of externally published messages. It must never
 be used as a way to reset exhausted attempts.
 
-`tests/Installation/outbox-upgrade.php` exercises the lease migration
-down/up directly against an existing pending outbox record in a disposable
-Laravel application. It verifies that the pending event survives. It does
+`tests/Installation/outbox-upgrade.php` models the previous lease schema by rolling back **only an empty disposable**
+Flowguard database, then records a pending event under that old schema and
+applies the forward lease migration. It verifies that the existing event survives. It does
 **not** guarantee zero-downtime migration or a safe downgrade of a live
 database with in-flight workers. Full backup/restore and engine-specific
 rollout testing remain mandatory before a stable release.
