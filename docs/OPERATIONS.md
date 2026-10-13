@@ -56,3 +56,17 @@ against a copy of existing data before deploying.
 
 A passing installation diagnostic validates only the local schema, not remote
 provider safety or multi-tenant authorization correctness.
+
+## Migration rollback safety
+
+Package migrations refuse to run their `down()` methods while **any**
+Flowguard-managed table contains records. This blocks accidental table drops
+or removal of outbox lease columns while business claims, evidence, receipts
+or deliveries remain persisted. Empty/disposable databases can still be
+rolled back normally. For upgrades in a populated environment, use forward-only
+schema migrations reviewed against a restored staging copy and keep a verified
+backup. Do not bypass the guard by truncating business records.
+
+A rollback guard is not an archival, restore, or zero-downtime migration tool.
+Validate the production database engine's transactional DDL semantics before
+making structural changes.
