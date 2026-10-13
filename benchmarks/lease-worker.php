@@ -27,10 +27,23 @@ try {
 
     $started = hrtime(true);
     $store = new DatabaseOutboxLeaseStore(flowguardConcurrencyConnection(), $table);
-    $lease = $store->reserve(60);
+    // SKIP LOCKED can return no row while peers briefly hold all candidates.
+    // This is a poll, not an assertion that the durable queue is empty.
+    $reserveDeadline = microtime(true) + 10;
+    $lease = null;
+
+    do {
+        $lease = $store->reserve(60);
+
+        if ($lease !== null) {
+            break;
+        }
+
+        usleep(10000);
+    } while (microtime(true) < $reserveDeadline);
 
     if ($lease === null) {
-        throw new RuntimeException('No eligible outbox message found.');
+        throw new RuntimeException('No eligible outbox message became available before deadline.');
     }
 
     $store->acknowledge($lease);
