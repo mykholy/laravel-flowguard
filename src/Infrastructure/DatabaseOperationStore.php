@@ -88,6 +88,10 @@ final readonly class DatabaseOperationStore implements OperationStore
     /** @param array<string, mixed> $result */
     public function complete(Claim $claim, array $result): OperationSnapshot
     {
+        // Reject objects, including JsonSerializable implementations, before
+        // json_encode invokes application-controlled serialization callbacks.
+        self::assertJsonNative($result, 0);
+
         try {
             $json = json_encode($result, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         } catch (JsonException $exception) {
@@ -99,6 +103,24 @@ final readonly class DatabaseOperationStore implements OperationStore
         }
 
         return $this->transition($claim, OperationStatus::Completed, $json, null);
+    }
+
+    /**
+     * @param  array<string|int, mixed>  $items
+     */
+    private static function assertJsonNative(array $items, int $depth): void
+    {
+        if ($depth > 32) {
+            throw new InvalidArgumentException('Result metadata nesting must not exceed 32 levels.');
+        }
+
+        foreach ($items as $value) {
+            if (is_array($value)) {
+                self::assertJsonNative($value, $depth + 1);
+            } elseif ($value !== null && ! is_scalar($value)) {
+                throw new InvalidArgumentException('Result metadata accepts JSON-native scalars and arrays only.');
+            }
+        }
     }
 
     public function requireReconciliation(Claim $claim, string $reason): OperationSnapshot
