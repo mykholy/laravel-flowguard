@@ -39,6 +39,14 @@ try {
         'elapsed_ms' => round((hrtime(true) - $started) / 1_000_000, 3),
     ], JSON_THROW_ON_ERROR)."\n";
 } catch (Throwable $exception) {
-    fwrite(STDERR, $exception::class."\n");
+    $sqlstate = $exception instanceof \Illuminate\Database\QueryException
+        ? (string) ($exception->errorInfo[0] ?? 'unknown')
+        : 'none';
+    $driverCode = $exception instanceof \Illuminate\Database\QueryException
+        ? (string) ($exception->errorInfo[1] ?? 'unknown')
+        : 'none';
+
+    // Classification only: SQL text and raw provider/database messages are omitted.
+    fwrite(STDERR, $exception::class.'|'.$sqlstate.'|'.$driverCode."\n");
     exit(1);
 }
