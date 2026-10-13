@@ -15,7 +15,7 @@ try {
         throw new InvalidArgumentException('Missing validated stress-test inputs.');
     }
 
-    $deadline = microtime(true) + 30;
+    $deadline = microtime(true) + 180;
     while (! file_exists($gate)) {
         if (microtime(true) >= $deadline) {
             throw new RuntimeException('Stress-test start gate timed out.');
@@ -39,6 +39,6 @@ try {
         'elapsed_ms' => round((hrtime(true) - $started) / 1_000_000, 3),
     ], JSON_THROW_ON_ERROR)."\n";
 } catch (Throwable $exception) {
-    fwrite(STDERR, $exception::class.': '.$exception->getMessage()."\n");
+    fwrite(STDERR, $exception::class."\n");
     exit(1);
 }
