@@ -93,17 +93,19 @@ if (! $operation->acquired()) {
 
 $claim = $operation->claim();
 try {
-    // IMPORTANT: the provider must support its own idempotency key when available.
+    // The gateway must support its own idempotency key where available.
     $payment = $gateway->capture($orderId, $amountMinor, idempotencyKey: $merchantId . ':' . $orderId);
-
-    // Commit your local business writes durably before acknowledging completion.
-    $guard->complete($claim, ['provider_reference' => $payment->reference]);
 } catch (\Throwable $e) {
-    // A timeout may mean the charge was successful. Fail closed.
-    // This example assumes no other operation finalization occurred yet.
+    // An exception after dispatch may mean the provider already charged.
+    // Use provider-specific semantics for errors known to occur before dispatch.
     $guard->requireReconciliation($claim, 'capture_outcome_unknown');
     throw $e;
 }
+
+// Do not catch errors from complete() as if the provider capture failed.
+// Persist local business writes atomically where required before this call.
+// If finalization fails after capture, investigate without repeating the charge.
+$guard->complete($claim, ['provider_reference' => $payment->reference]);
 ```
 
 The caller must ensure errors before dispatch and known vs unknown outcomes are handled
@@ -135,8 +137,8 @@ connection, while leaving the operation in `requires_reconciliation`.
   payloads, headers or gateway responses.
 - Does **not** implement replay, capture, refund, or finalization.
 
-See [RFC-002 evidence journal](docs/RFC-002-EVIDENCE-JOURNAL.md). This is still
-pre-alpha and needs fault-injection and independent security review.
+See [RFC-002 evidence journal](docs/RFC-002-EVIDENCE-JOURNAL.md). This remains experimental; multi-database fault-injection tests exist, but an
+independent security review and a real-provider pilot are release prerequisites.
 
 ## Opt-in manual outcome classification (experimental)
 
