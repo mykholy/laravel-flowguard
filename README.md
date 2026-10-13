@@ -3,7 +3,7 @@
 **Durable business-operation primitives for Laravel 12 and 13.**
 
 > **Release status: developer preview, no stable tag yet.** The implementation
-> passes an automated Laravel 12/13, PHP 8.3/8.4, MySQL 8 and PostgreSQL 16
+> passes an automated Laravel 12/13, PHP 8.3/8.4/8.5, MySQL 8 and PostgreSQL 16
 > compatibility matrix. Passing CI does not establish real-provider safety.
 > Do not use Flowguard to capture live payments until the
 > [release criteria](docs/RELEASE_CRITERIA.md) are closed.
@@ -31,7 +31,7 @@ Flowguard does not guarantee exactly-once effects across external systems.
 ## Requirements and local development
 
 PHP 8.3+, Laravel 12/13, a transactional database and Composer 2.
-CI tests Laravel 12/13 on PHP 8.3/8.4, plus MySQL 8 and PostgreSQL 16.
+CI tests Laravel 12/13 on PHP 8.3/8.4/8.5, plus MySQL 8 and PostgreSQL 16.
 
 The package is not yet published to Packagist. For development environments,
 use Composer's GitHub VCS repository support:

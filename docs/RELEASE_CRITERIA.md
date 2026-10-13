@@ -15,7 +15,7 @@ guarantees exactly-once external side effects.
       tests with two independent SQL connections.
 - [x] A bounded, supervised-worker-compatible publishing contract and
       read-only operational inspection commands.
-- [x] Laravel 12/13, PHP 8.3/8.4, MySQL 8 and PostgreSQL 16 CI matrix,
+- [x] Laravel 12/13, PHP 8.3/8.4/8.5, MySQL 8 and PostgreSQL 16 CI matrix,
       static analysis, formatting and production dependency audit.
 - [x] Standalone Laravel application discovery/migrations on SQLite,
       MySQL and PostgreSQL.
