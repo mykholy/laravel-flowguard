@@ -197,3 +197,11 @@ and [release criteria](docs/RELEASE_CRITERIA.md). Contributions should include a
 public failure scenario and rationale for any API change. Small, reviewable PRs preferred.
 
 MIT © 2026 Ahmed El-Kholy.
+
+## API stability and upgrades
+
+The current [public API contract](docs/PUBLIC_API.md) is a **draft** checked by
+unit tests. No stable tag has been published. Operational retention and schema
+rollback policies are described in [retention](docs/RETENTION.md) and the
+[operations runbook](docs/OPERATIONS.md).
+
