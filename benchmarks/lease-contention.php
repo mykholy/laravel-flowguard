@@ -10,7 +10,7 @@ require dirname(__DIR__).'/tests/Concurrency/bootstrap.php';
 $raw = getenv('FLOWGUARD_STRESS_WORKERS');
 $workersRequested = filter_var($raw === false ? '10' : $raw, FILTER_VALIDATE_INT);
 
-if (! is_int($workersRequested) || $workersRequested < 2 || $workersRequested > 500) {
+if (is_int($workersRequested) === false || $workersRequested < 2 || $workersRequested > 500) {
     throw new InvalidArgumentException('Stress worker count must be 2..500.');
 }
 
@@ -18,7 +18,7 @@ if ($workersRequested > 50 && getenv('FLOWGUARD_STRESS_LARGE_RUN') !== '1') {
     throw new InvalidArgumentException('More than 50 local processes requires explicit FLOWGUARD_STRESS_LARGE_RUN=1.');
 }
 
-if (! function_exists('proc_open')) {
+if (function_exists('proc_open') === false) {
     throw new RuntimeException('Independent-process stress testing requires proc_open.');
 }
 
@@ -80,7 +80,7 @@ try {
             2 => ['pipe', 'w'],
         ], $pipes, dirname(__DIR__), $env);
 
-        if (! is_resource($process)) {
+        if (is_resource($process) === false) {
             throw new RuntimeException('Could not start independent lease process.');
         }
 
@@ -106,8 +106,8 @@ try {
 
         try {
             $row = json_decode((string) $output, true, 512, JSON_THROW_ON_ERROR);
-            if (! is_array($row) || ! is_string($row['id'] ?? null)
-                || ! is_numeric($row['elapsed_ms'] ?? null)) {
+            if (is_array($row) === false || is_string($row['id'] ?? null) === false
+                || is_numeric($row['elapsed_ms'] ?? null) === false) {
                 throw new RuntimeException('Invalid worker record.');
             }
 
