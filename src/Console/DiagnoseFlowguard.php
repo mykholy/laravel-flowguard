@@ -59,6 +59,33 @@ final class DiagnoseFlowguard extends Command
                 }
             }
 
+            $requiredUniqueIndexes = [
+                $operationsTable => ['scope', 'key_hash'],
+                'flowguard_outbox' => ['scope', 'event_key_hash'],
+                'flowguard_inbox' => ['scope', 'event_key_hash'],
+                'flowguard_resolution_decisions' => ['operation_id'],
+            ];
+
+            foreach ($requiredUniqueIndexes as $table => $columns) {
+                if (! $schema->hasTable($table)) {
+                    continue;
+                }
+
+                $hasUniqueIndex = false;
+
+                foreach ($schema->getIndexes($table) as $index) {
+                    if ($index['unique'] === true && $index['columns'] === $columns) {
+                        $hasUniqueIndex = true;
+
+                        break;
+                    }
+                }
+
+                if (! $hasUniqueIndex) {
+                    $missing[] = $table.' UNIQUE('.implode(', ', $columns).')';
+                }
+            }
+
             if ($missing !== []) {
                 $this->error('Incomplete Flowguard migrations: '.implode(', ', $missing));
 
