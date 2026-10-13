@@ -51,3 +51,9 @@ jobs:
           APP_ENV: testing
           DB_CONNECTION: sqlite
         run: php ../tests/Installation/verify.php
+      - name: Verify populated lease schema upgrade
+        working-directory: smoke-app
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+        run: php ../tests/Installation/outbox-upgrade.php

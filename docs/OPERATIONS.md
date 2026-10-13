@@ -56,3 +56,34 @@ against a copy of existing data before deploying.
 
 A passing installation diagnostic validates only the local schema, not remote
 provider safety or multi-tenant authorization correctness.
+
+## Migration rollback safety
+
+Package migrations refuse to run their `down()` methods while **any**
+Flowguard-managed table contains records. This blocks accidental table drops
+or removal of outbox lease columns while business claims, evidence, receipts
+or deliveries remain persisted. Empty/disposable databases can still be
+rolled back normally. For upgrades in a populated environment, use forward-only
+schema migrations reviewed against a restored staging copy and keep a verified
+backup. Do not bypass the guard by truncating business records.
+
+A rollback guard is not an archival, restore, or zero-downtime migration tool.
+Validate the production database engine's transactional DDL semantics before
+making structural changes.
+
+## Lease schema upgrade and guarded rollback
+
+The installation smoke test constructs a separate disposable, **pre-lease**
+SQLite outbox table, inserts an existing pending event, and applies the
+lease-column migration forward. It verifies the event survives with intact
+identity and default lease metadata.
+
+Every package `down()` migration now refuses to run while any Flowguard
+table contains records. The same smoke test proves a populated lease-column
+downgrade is rejected without altering the pending event. This prevents
+mistakenly using rollback to reset exhausted attempts or active leases.
+
+For production schema changes, stop affected dispatchers, take and verify a
+consistent backup, rehearse the forward migration on a nonempty staging copy,
+and only deploy forward-compatible schema changes. A SQLite smoke test does
+**not** establish zero-downtime MySQL/PostgreSQL safety or backup restoration.
