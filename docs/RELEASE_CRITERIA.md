@@ -28,10 +28,12 @@ guarantees exactly-once external side effects.
 
 ## Mandatory blockers before v1.0.0
 
-- [ ] **Independent human security sign-off** on identity and tenant
+- [ ] **Independent human security sign-off** (see
+      [review handoff](INDEPENDENT_SECURITY_REVIEW.md)) on identity and tenant
       authorization, provider signature verification, secrets, approval policy
       and threat model in a real host application.
-- [ ] **Real staging integration with at least one external provider**:
+- [ ] **Real staging integration with at least one external provider**
+      (see [pilot protocol](PROVIDER_STAGING_PILOT.md)):
       inject duplicate events, timeout ambiguity, remote success before local
       acknowledgement, process death, and reconciliation/retry.
 - [ ] **Repeated, representative 100/500-worker stress tests** on MySQL and
