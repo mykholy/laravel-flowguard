@@ -19,8 +19,8 @@ final readonly class OperationIdentity
     /** @param array<string|int, mixed> $payload */
     public static function from(string $scope, string $key, array $payload): self
     {
-        if (preg_match('/^[a-z][a-z0-9._-]{0,119}$/D', $scope) !== 1) {
-            throw new InvalidArgumentException('Scope must be 1-120 lowercase ASCII characters (a-z, 0-9, dot, underscore, hyphen), starting with a letter.');
+        if (preg_match('/^[a-z0-9][a-z0-9:._-]{0,119}$/D', $scope) !== 1) {
+            throw new InvalidArgumentException('Scope must be 1-120 lowercase ASCII machine characters, starting with a letter or digit.');
         }
 
         if ($key === '' || strlen($key) > 512) {
