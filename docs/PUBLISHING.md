@@ -85,3 +85,14 @@ application configuration, never an untrusted message or request header.
 An unscoped store retains the original all-scopes behavior for shared
 publishers. Flowguard **does not authenticate the tenant** and a
 scope-qualified worker does not replace the host's credential authorization.
+
+The opt-in Artisan command supports the same restriction:
+
+```bash
+php artisan flowguard:dispatch-once --scope=tenant.42:orders
+```
+
+An application-wide publisher binding is still required. The CLI flag is an
+**operator-supplied scope**, so production job scheduling must supply it from
+trusted configuration and bind credentials to the same tenant. Never forward
+the scope directly from a webhook or client request.
