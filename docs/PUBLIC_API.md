@@ -31,6 +31,10 @@ use PHP named arguments, so renaming a parameter is a compatibility change.
 
 - Request payload fingerprints are produced from canonical JSON; map keys
   are ordered while list order is preserved.
+- Result metadata is limited to JSON-native scalars and arrays, at most
+  32 levels deep and 16 KiB encoded. Objects including `JsonSerializable`
+  are rejected before their serialization callbacks execute. Store bounded
+  provider references, not raw API responses or credentials.
 - Operation, inbox and outbox identities are tenant scoped, but Flowguard
   **does not authenticate tenants**. A host must derive and verify each scope.
 - Operation claims and outbox lease capabilities must not be serialized or
