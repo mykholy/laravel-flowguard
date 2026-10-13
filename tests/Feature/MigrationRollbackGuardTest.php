@@ -23,7 +23,7 @@ final class MigrationRollbackGuardTest extends TestCase
     public function test_every_down_migration_refuses_to_drop_tables_with_live_records(): void
     {
         $guard = $this->app->make(Flowguard::class);
-        $claim = $guard->begin('tenant.1:payments', 'rollback-guard-1', ['amount_minor' => 500]);
+        $claim = $guard->begin('payments.capture', 'rollback-guard-1', ['amount_minor' => 500]);
 
         self::assertTrue($claim->acquired());
 
