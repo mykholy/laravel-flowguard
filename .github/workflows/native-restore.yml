@@ -1,0 +1,88 @@
+name: Native Backup and Restore Drill
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  native-restore:
+    name: ${{ matrix.db }} · native export and restored outbox
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        db: [mysql, pgsql]
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root_flowguard_ci
+          MYSQL_DATABASE: flowguard_ci
+          MYSQL_USER: flowguard
+          MYSQL_PASSWORD: flowguard
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uflowguard -pflowguard"
+          --health-interval=10s --health-timeout=5s --health-retries=12
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: flowguard_ci
+          POSTGRES_USER: flowguard
+          POSTGRES_PASSWORD: flowguard
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd="pg_isready -U flowguard -d flowguard_ci"
+          --health-interval=10s --health-timeout=5s --health-retries=12
+    env:
+      FLOWGUARD_CONCURRENCY_TEST: '1'
+      FLOWGUARD_RESTORE_CONFIRM: disposable-only
+      FLOWGUARD_TEST_DATABASE: flowguard_ci
+      FLOWGUARD_TEST_DRIVER: ${{ matrix.db }}
+      FLOWGUARD_TEST_HOST: 127.0.0.1
+      FLOWGUARD_TEST_PORT: ${{ matrix.db == 'mysql' && '3306' || '5432' }}
+      FLOWGUARD_TEST_USERNAME: flowguard
+      FLOWGUARD_TEST_PASSWORD: flowguard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_mysql, pdo_pgsql
+          coverage: none
+          tools: composer:v2
+      - name: Install PHP dependencies
+        run: composer require --dev 'orchestra/testbench:^11.0' 'laravel/framework:^13.0' --with-all-dependencies --no-interaction --no-progress
+      - name: Install native database clients
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq default-mysql-client postgresql-client
+      - name: Create isolated SQL outbox fixture
+        run: php tests/Installation/native-backup-restore.php prepare
+      - name: Export and restore MySQL table in another disposable database
+        if: matrix.db == 'mysql'
+        env:
+          MYSQL_PWD: flowguard
+        run: |
+          MYSQL_PWD=root_flowguard_ci mysql -h 127.0.0.1 -u root -e "CREATE DATABASE flowguard_restore_ci; GRANT ALL PRIVILEGES ON flowguard_restore_ci.* TO 'flowguard'@'%';"
+          mysqldump -h 127.0.0.1 -u flowguard --single-transaction --no-tablespaces --skip-lock-tables flowguard_ci fg_restore_fixture > /tmp/flowguard-restore.sql
+          mysql -h 127.0.0.1 -u flowguard flowguard_restore_ci < /tmp/flowguard-restore.sql
+      - name: Export and restore PostgreSQL table in another disposable database
+        if: matrix.db == 'pgsql'
+        env:
+          PGPASSWORD: flowguard
+        run: |
+          psql -h 127.0.0.1 -U flowguard -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE flowguard_restore_ci"
+          pg_dump -h 127.0.0.1 -U flowguard -d flowguard_ci --no-owner --no-privileges -t public.fg_restore_fixture --format=plain > /tmp/flowguard-restore.sql
+          psql -h 127.0.0.1 -U flowguard -d flowguard_restore_ci -v ON_ERROR_STOP=1 -f /tmp/flowguard-restore.sql
+      - name: Assert restored states and resume pending delivery
+        run: php tests/Installation/native-backup-restore.php verify
