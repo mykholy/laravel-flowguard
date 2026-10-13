@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mykholy\Flowguard\Tests\Feature;
 
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use Mykholy\Flowguard\Outbox\DatabaseOutboxLeaseStore;
 use Mykholy\Flowguard\Outbox\DatabaseOutboxRecorder;
 use Mykholy\Flowguard\Outbox\LeaseLost;
@@ -23,6 +24,69 @@ final class DatabaseOutboxLeaseStoreTest extends TestCase
             return (new DatabaseOutboxRecorder(DB::connection()))
                 ->record('tenant.42:orders', 'order-42:paid', 'order.paid', 'order-42')->id;
         });
+    }
+
+    public function test_scoped_worker_only_reserves_its_tenants_messages(): void
+    {
+        DB::transaction(function (): void {
+            $recorder = new DatabaseOutboxRecorder(DB::connection());
+            $recorder->record('tenant.1:orders', 'tenant-1-event', 'order.paid', 'order-1');
+            $recorder->record('tenant.2:orders', 'tenant-2-event', 'order.paid', 'order-2');
+        });
+
+        $firstTenant = new DatabaseOutboxLeaseStore(DB::connection(), scope: 'tenant.1:orders');
+        $secondTenant = new DatabaseOutboxLeaseStore(DB::connection(), scope: 'tenant.2:orders');
+
+        $first = $firstTenant->reserve();
+        self::assertNotNull($first);
+        self::assertSame('tenant.1:orders', $first->scope);
+        self::assertNull($firstTenant->reserve());
+
+        $second = $secondTenant->reserve();
+        self::assertNotNull($second);
+        self::assertSame('tenant.2:orders', $second->scope);
+        self::assertNotSame($first->id, $second->id);
+
+        $firstTenant->acknowledge($first);
+        $secondTenant->acknowledge($second);
+
+        self::assertSame(2, DB::table('flowguard_outbox')->where('status', 'delivered')->count());
+    }
+
+    public function test_scoped_worker_cannot_acknowledge_or_release_another_tenants_lease(): void
+    {
+        $this->record();
+
+        $owner = new DatabaseOutboxLeaseStore(DB::connection(), scope: 'tenant.42:orders');
+        $otherTenant = new DatabaseOutboxLeaseStore(DB::connection(), scope: 'tenant.2:orders');
+        $lease = $owner->reserve();
+
+        self::assertNotNull($lease);
+        self::assertNull($otherTenant->reserve());
+
+        try {
+            $otherTenant->acknowledge($lease);
+            self::fail('Cross-tenant acknowledgement must fail.');
+        } catch (LeaseLost) {
+            self::assertSame('leased', DB::table('flowguard_outbox')->value('status'));
+        }
+
+        try {
+            $otherTenant->release($lease, 'network_timeout', 30);
+            self::fail('Cross-tenant release must fail.');
+        } catch (LeaseLost) {
+            self::assertSame('leased', DB::table('flowguard_outbox')->value('status'));
+        }
+
+        $owner->acknowledge($lease);
+        self::assertSame('delivered', DB::table('flowguard_outbox')->value('status'));
+    }
+
+    public function test_invalid_scope_is_rejected_when_constructing_a_worker(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        new DatabaseOutboxLeaseStore(DB::connection(), scope: 'tenant 42');
     }
 
     public function test_acknowledgement_finishes_the_delivery_once(): void

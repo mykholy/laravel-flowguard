@@ -63,3 +63,36 @@ reference. It never receives the lease token.
 **Delivery is at-least-once. Exactly-once side effects are not promised.**
 The package ships a bounded CLI orchestration primitive, not an automatic
 scheduler, provider transport or guarantee of end-to-end delivery.
+
+## Tenant-scoped delivery workers
+
+If your application uses different provider credentials per tenant, create a
+dedicated lease store for that tenant's **server-derived** scope:
+
+```php
+$leases = new DatabaseOutboxLeaseStore(
+    DB::connection(),
+    scope: 'tenant.42:orders',
+);
+$dispatcher = new OutboxDispatcher($leases, $publisher, $logger);
+```
+
+A scoped store reserves only its own rows and refuses to acknowledge or
+release a lease belonging to a different scope, even when passed a valid
+lease object from another worker. The scope must come from authenticated
+application configuration, never an untrusted message or request header.
+
+An unscoped store retains the original all-scopes behavior for shared
+publishers. Flowguard **does not authenticate the tenant** and a
+scope-qualified worker does not replace the host's credential authorization.
+
+The opt-in Artisan command supports the same restriction:
+
+```bash
+php artisan flowguard:dispatch-once --scope=tenant.42:orders
+```
+
+An application-wide publisher binding is still required. The CLI flag is an
+**operator-supplied scope**, so production job scheduling must supply it from
+trusted configuration and bind credentials to the same tenant. Never forward
+the scope directly from a webhook or client request.
