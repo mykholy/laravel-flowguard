@@ -54,3 +54,17 @@ The application policy must bind the independently authenticated initiator and
 approver, target operation scope, selected evidence ID, confirmed outcome and
 approval record to the **same tenant**, all within the resolution transaction.
 Deny by default; do not call external APIs from authorization callbacks.
+
+## Owner capability handling
+
+`Claim` and `OutboxLease` contain short-lived secret capabilities. Their
+diagnostic views redact those secrets, and their serialization and restoration
+hooks reject queue/session transport. Keep these objects **in memory and within
+the current request or worker execution**, not in queued jobs, cache values or
+session payloads. Pass only non-sensitive IDs across process boundaries and
+re-acquire ownership through the documented workflow.
+
+These guards do not protect against PHP reflection, unrestricted memory dumps,
+explicit property extraction, `var_export`, or logging the raw constructor
+arguments. Never pass entire capabilities to application loggers or error
+reporters. An externally compromised process can still read its own memory.
