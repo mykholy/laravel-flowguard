@@ -57,17 +57,19 @@ against a copy of existing data before deploying.
 A passing installation diagnostic validates only the local schema, not remote
 provider safety or multi-tenant authorization correctness.
 
-## Lease migration rollback limits
+## Lease schema upgrade and guarded rollback
 
-Before downgrading the outbox lease schema, stop all dispatchers and
-verify that **no active leases exist**. A schema rollback removes lease
-tokens, attempt counters, retry delays and delivery timestamps; it is not
-a safe replay or rollback of externally published messages. It must never
-be used as a way to reset exhausted attempts.
+The installation smoke test constructs a separate disposable, **pre-lease**
+SQLite outbox table, inserts an existing pending event, and applies the
+lease-column migration forward. It verifies the event survives with intact
+identity and default lease metadata.
 
-`tests/Installation/outbox-upgrade.php` models the previous lease schema by rolling back **only an empty disposable**
-Flowguard database, then records a pending event under that old schema and
-applies the forward lease migration. It verifies that the existing event survives. It does
-**not** guarantee zero-downtime migration or a safe downgrade of a live
-database with in-flight workers. Full backup/restore and engine-specific
-rollout testing remain mandatory before a stable release.
+Every package `down()` migration now refuses to run while any Flowguard
+table contains records. The same smoke test proves a populated lease-column
+downgrade is rejected without altering the pending event. This prevents
+mistakenly using rollback to reset exhausted attempts or active leases.
+
+For production schema changes, stop affected dispatchers, take and verify a
+consistent backup, rehearse the forward migration on a nonempty staging copy,
+and only deploy forward-compatible schema changes. A SQLite smoke test does
+**not** establish zero-downtime MySQL/PostgreSQL safety or backup restoration.
