@@ -9,7 +9,7 @@ use LogicException;
 use Mykholy\Flowguard\Contracts\OutboxPublisher;
 use Mykholy\Flowguard\Outbox\DatabaseOutboxLeaseStore;
 use Mykholy\Flowguard\Outbox\OutboxDispatcher;
-use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 final class OutboxDispatchTransactionTest extends TestCase
 {
@@ -21,7 +21,7 @@ final class OutboxDispatchTransactionTest extends TestCase
         $dispatcher = new OutboxDispatcher(
             new DatabaseOutboxLeaseStore(DB::connection()),
             $publisher,
-            $this->createMock(LoggerInterface::class),
+            new NullLogger,
         );
 
         $this->expectException(LogicException::class);
