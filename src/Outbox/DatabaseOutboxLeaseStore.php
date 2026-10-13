@@ -26,6 +26,7 @@ final readonly class DatabaseOutboxLeaseStore implements OutboxDispatchPrecondit
         private Connection $connection,
         private string $table = 'flowguard_outbox',
         private int $maxAttempts = 10,
+        private ?string $scope = null,
     ) {
         if (preg_match('/^[a-zA-Z_][a-zA-Z_0-9]*$/D', $table) !== 1) {
             throw new InvalidArgumentException('Invalid outbox table name.');
@@ -33,6 +34,10 @@ final readonly class DatabaseOutboxLeaseStore implements OutboxDispatchPrecondit
 
         if ($maxAttempts < 1 || $maxAttempts > 1000) {
             throw new InvalidArgumentException('Maximum delivery attempts must be between 1 and 1000.');
+        }
+
+        if ($scope !== null && preg_match('/^[a-z0-9][a-z0-9:._-]{0,119}$/D', $scope) !== 1) {
+            throw new InvalidArgumentException('Outbox scope must be a bounded tenant-aware identifier.');
         }
     }
 
@@ -59,6 +64,9 @@ final readonly class DatabaseOutboxLeaseStore implements OutboxDispatchPrecondit
 
             /** @var Builder $query */
             $query = $this->connection->table($this->table)
+                ->when($this->scope !== null, function (Builder $query): void {
+                    $query->where('scope', $this->scope);
+                })
                 ->where('delivery_attempts', '<', $this->maxAttempts)
                 ->where(function (Builder $query) use ($nowString): void {
                     $query->where(function (Builder $pending) use ($nowString): void {
@@ -162,6 +170,9 @@ final readonly class DatabaseOutboxLeaseStore implements OutboxDispatchPrecondit
     {
         $query = $this->connection->table($this->table)
             ->where('id', $lease->id)
+            ->when($this->scope !== null, function (Builder $query): void {
+                $query->where('scope', $this->scope);
+            })
             ->where('status', 'leased')
             ->where('lease_hash', $lease->tokenHash());
 
