@@ -23,17 +23,37 @@ validate the request before calling it. Flowguard is not a webhook signature ver
 | Leaking sensitive payload | Store only payload hash; results must be safe metadata |
 | Key with low entropy | SHA-256 is not encryption; do not treat as anonymization |
 | Reused raw idempotency key across providers | Distinct scopes and provider idempotency keys required |
-| Claim lost after crash | Reconciliation needed; manual workflow TBD |
-| Replay/recovery mistakes | Not exposed in prototype |
+| Claim lost after crash | Reconciliation requires application-authorized evidence and explicit review |
+| Replay/recovery mistakes | No automatic replay of unknown provider effects; outbox delivery remains at-least-once |
 
 ## Explicit gaps
 
-No retention/purge policy, role-based operator UI, per-tenant authorization, immutable
-audit history, multi-process DB race testing, provider reconciliation adapters, or
-at-rest encryption for result metadata yet. These must be addressed prior to declaring
-production readiness. Configuration and database credentials are trusted deployment data.
+There is no built-in authentication, tenant membership directory, role-based
+operator UI, provider verification adapter, retention/purge policy, or at-rest
+encryption for result metadata. The host must provide authenticated, tenant-scoped
+`EvidenceAuthorization` and `ResolutionAuthorization` implementations. This
+repository includes multi-process database race tests and a sample two-tenant
+policy fixture; neither replaces testing the real host's access-control model.
+Provider staging integration and an independent security review remain release
+gates. Configuration and database credentials are trusted deployment data.
 
 Report suspected vulnerabilities privately; do not attach production payloads or secrets to public issues.
+
+## Multi-tenant host integration
+
+The package treats scope as trusted application input, never as a substitute for
+authenticated tenant membership. Tenant-qualified identifiers such as
+`tenant.42:payments` are supported consistently by operations, inbox and outbox.
+Hosts must derive scope from their authenticated server-side tenant context; do
+not trust client-supplied tenant IDs or approval references. The example test
+`TenantAuthorizationBoundaryTest` proves both cross-tenant evidence denial and
+cross-tenant approval rejection using a host-owned approval table. This test
+fixture is **not** an authentication provider or production policy.
+
+The application policy must bind the independently authenticated initiator and
+approver, target operation scope, selected evidence ID, confirmed outcome and
+approval record to the **same tenant**, all within the resolution transaction.
+Deny by default; do not call external APIs from authorization callbacks.
 
 ## Owner capability handling
 
