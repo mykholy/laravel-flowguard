@@ -36,3 +36,17 @@ of a nonempty representative staging application, verification of data
 integrity across all package tables, an audited encryption/retention policy
 and independent sign-off. Never use the demo credentials outside disposable
 GitHub Actions services.
+
+## Linked audit-record restoration
+
+The drill also exports and restores a small operation/evidence/resolution graph
+using real foreign-key relationships and a unique resolution-per-operation
+constraint. The post-restore check verifies all three identities and that
+attempting to delete the referenced operation is rejected by the restored SQL
+foreign key. This catches native dump/import problems that a single-table
+snapshot would miss.
+
+The fixture intentionally uses representative schemas, not every column of
+all package migrations. A full backup/restore rehearsal of a populated host
+application, including tenant records and provider configurations, is still a
+separate release gate.
