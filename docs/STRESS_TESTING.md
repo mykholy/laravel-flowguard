@@ -43,9 +43,10 @@ Concurrent processes can exceed database max-connections or hosted-runner
 process/memory limits, especially at 500; failure is recorded rather than
 treated as success. CPU, RAM, DB parameters, process caps and hardware must
 be recorded alongside representative staging benchmarks before an SLO is
-established. Because reservations currently use `FOR UPDATE` without
-`SKIP LOCKED`, lock contention is expected and the throughput envelope
-must be measured rather than asserted.
+established. Reservations use `FOR UPDATE SKIP LOCKED` on MySQL and PostgreSQL, so
+workers can claim later rows instead of blocking behind the first locked
+message. Contention, DB connection limits and fair distribution are still
+measured, not assumed.
 
 A clean ten-worker result alone does **not** close the v1.0.0 100/500-worker
 release gate. Review every database/workload result before setting acceptance
