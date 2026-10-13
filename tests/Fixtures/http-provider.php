@@ -7,17 +7,20 @@ $path = getenv('FLOWGUARD_TEST_PROVIDER_STATE');
 
 if (is_string($path) === false || $path === '') {
     http_response_code(500);
+
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && $_SERVER['REQUEST_URI'] === '/health') {
     header('Content-Type: application/json');
     echo '{"ready":true}';
+
     return;
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || $_SERVER['REQUEST_URI'] !== '/events') {
     http_response_code(404);
+
     exit;
 }
 
@@ -57,6 +60,7 @@ try {
                 'topic' => $data['topic'],
             ]) {
                 http_response_code(409);
+
                 exit;
             }
         } else {
