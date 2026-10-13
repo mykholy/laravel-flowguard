@@ -24,8 +24,9 @@ Exactly-once external side effects are outside the library's guarantees.
       provider verification, credentials handling, and a full threat-model audit.
 - [ ] At least one real staging integration with a representative provider:
       inject duplicate webhooks, provider timeouts, and process crashes.
-- [ ] Fault-injection repeat runs at realistic concurrency; define acceptable
-      retry, contention and deadlock characteristics on MySQL and PostgreSQL.
+- [ ] Repeatable 100/500-worker load on representative infrastructure with
+      predefined lock-wait, deadlock, CPU, memory and latency thresholds.
+      A disposable 10-worker CI smoke test is part of this work.
 - [ ] Reproducible performance benchmarks and a documented capacity envelope.
 - [ ] Clear archival and retention policy for operations, evidence, inbox and
       outbox messages. Never prune unresolved states without explicit review.
