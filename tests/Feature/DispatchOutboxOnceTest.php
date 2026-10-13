@@ -46,6 +46,48 @@ final class DispatchOutboxOnceTest extends TestCase
         self::assertSame(1, DB::table('flowguard_outbox')->where('status', 'pending')->count());
     }
 
+    public function test_scoped_command_only_dispatches_an_authorized_tenant_queue(): void
+    {
+        DB::transaction(function (): void {
+            $recorder = new DatabaseOutboxRecorder(DB::connection());
+            $recorder->record('tenant.1:orders', 'cmd-one', 'order.paid', 'order-1');
+            $recorder->record('tenant.2:orders', 'cmd-two', 'order.paid', 'order-2');
+        });
+
+        $publisher = new class implements OutboxPublisher
+        {
+            /** @var list<string> */
+            public array $scopes = [];
+
+            public function publish(OutboxMessage $message): void
+            {
+                $this->scopes[] = $message->scope;
+            }
+        };
+
+        $this->app->instance(OutboxPublisher::class, $publisher);
+        $this->artisan('flowguard:dispatch-once', ['--scope' => 'tenant.2:orders'])
+            ->expectsOutputToContain('One outbox message delivered.')
+            ->assertExitCode(0);
+
+        self::assertSame(['tenant.2:orders'], $publisher->scopes);
+        self::assertSame('pending', DB::table('flowguard_outbox')
+            ->where('scope', 'tenant.1:orders')->value('status'));
+        self::assertSame('delivered', DB::table('flowguard_outbox')
+            ->where('scope', 'tenant.2:orders')->value('status'));
+    }
+
+    public function test_invalid_scope_fails_before_claiming_a_message(): void
+    {
+        $this->record('dispatch-scoped-invalid');
+
+        $this->artisan('flowguard:dispatch-once', ['--scope' => 'tenant 42'])
+            ->expectsOutputToContain('Scope must be a bounded tenant-aware identifier.')
+            ->assertExitCode(1);
+
+        self::assertSame(0, DB::table('flowguard_outbox')->sum('delivery_attempts'));
+    }
+
     public function test_missing_publisher_binding_fails_without_acquiring_a_message(): void
     {
         $this->record('dispatch-3');

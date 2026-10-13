@@ -15,7 +15,7 @@ use Throwable;
 /** One bounded delivery attempt; never starts a daemon or a remote integration. */
 final class DispatchOutboxOnce extends Command
 {
-    protected $signature = 'flowguard:dispatch-once {--lease=60 : Reservation lifetime in seconds} {--retry=60 : Retry delay in seconds} {--max-attempts=10 : Maximum reservations per message}';
+    protected $signature = 'flowguard:dispatch-once {--lease=60 : Reservation lifetime in seconds} {--retry=60 : Retry delay in seconds} {--max-attempts=10 : Maximum reservations per message} {--scope= : Limit delivery to this server-authorized tenant scope}';
 
     protected $description = 'Publish at most one pending outbox message using an application-bound publisher';
 
@@ -24,11 +24,19 @@ final class DispatchOutboxOnce extends Command
         $lease = $this->option('lease');
         $retry = $this->option('retry');
         $maximum = $this->option('max-attempts');
+        $scope = $this->option('scope');
 
         if (! is_string($lease) || ! ctype_digit($lease) || (int) $lease < 5 || (int) $lease > 3600
             || ! is_string($retry) || ! ctype_digit($retry) || (int) $retry > 86400
             || ! is_string($maximum) || ! ctype_digit($maximum) || (int) $maximum < 1 || (int) $maximum > 1000) {
             $this->error('Lease must be 5-3600, retry 0-86400, and max-attempts 1-1000.');
+
+            return self::FAILURE;
+        }
+
+        if ($scope !== null && (! is_string($scope)
+            || preg_match('/^[a-z0-9][a-z0-9:._-]{0,119}$/D', $scope) !== 1)) {
+            $this->error('Scope must be a bounded tenant-aware identifier.');
 
             return self::FAILURE;
         }
@@ -44,7 +52,7 @@ final class DispatchOutboxOnce extends Command
             $name = config('flowguard.connection');
 
             $dispatcher = new OutboxDispatcher(
-                new DatabaseOutboxLeaseStore($database->connection($name), maxAttempts: (int) $maximum),
+                new DatabaseOutboxLeaseStore($database->connection($name), maxAttempts: (int) $maximum, scope: $scope),
                 app(OutboxPublisher::class),
                 $logger,
                 leaseSeconds: (int) $lease,
