@@ -38,3 +38,19 @@ Provider staging integration and an independent security review remain release
 gates. Configuration and database credentials are trusted deployment data.
 
 Report suspected vulnerabilities privately; do not attach production payloads or secrets to public issues.
+
+## Multi-tenant host integration
+
+The package treats scope as trusted application input, never as a substitute for
+authenticated tenant membership. Tenant-qualified identifiers such as
+`tenant.42:payments` are supported consistently by operations, inbox and outbox.
+Hosts must derive scope from their authenticated server-side tenant context; do
+not trust client-supplied tenant IDs or approval references. The example test
+`TenantAuthorizationBoundaryTest` proves both cross-tenant evidence denial and
+cross-tenant approval rejection using a host-owned approval table. This test
+fixture is **not** an authentication provider or production policy.
+
+The application policy must bind the independently authenticated initiator and
+approver, target operation scope, selected evidence ID, confirmed outcome and
+approval record to the **same tenant**, all within the resolution transaction.
+Deny by default; do not call external APIs from authorization callbacks.
