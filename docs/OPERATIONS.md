@@ -48,7 +48,7 @@ leases and pending receipts before resuming.
 
 ## Retention and upgrades
 
-No automatic pruning is implemented. Do not delete unresolved operations,
+See the [retention and archival contract](RETENTION.md). No automatic pruning is implemented. Do not delete unresolved operations,
 resolution evidence or pending outbox messages merely because they are old.
 Choose retention and deletion policies with the application's privacy, audit
 and regulatory requirements in mind. Verify every migration and rollback
