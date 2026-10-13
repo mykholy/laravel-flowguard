@@ -55,8 +55,10 @@ final readonly class DatabaseOutboxLeaseStore implements OutboxDispatchPrecondit
             $now = UtcDatabaseClock::now($this->connection);
             $nowString = $now->format('Y-m-d H:i:s.u');
 
-            /** @var stdClass|null $row */
-            $row = $this->connection->table($this->table)
+            $driver = $this->connection->getDriverName();
+
+            /** @var Builder $query */
+            $query = $this->connection->table($this->table)
                 ->where('delivery_attempts', '<', $this->maxAttempts)
                 ->where(function (Builder $query) use ($nowString): void {
                     $query->where(function (Builder $pending) use ($nowString): void {
@@ -71,9 +73,15 @@ final readonly class DatabaseOutboxLeaseStore implements OutboxDispatchPrecondit
                     });
                 })
                 ->orderBy('created_at')
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->first();
+                ->orderBy('id');
+
+            // Skip rows locked by other transactions on supported SQL engines.
+            /** @var stdClass|null $row */
+            $row = match ($driver) {
+                'mysql', 'pgsql' => $query->lock('FOR UPDATE SKIP LOCKED')->first(),
+                'sqlite' => $query->lockForUpdate()->first(),
+                default => throw new InvalidArgumentException('Unsupported outbox database driver.'),
+            };
 
             if ($row === null) {
                 return null;
