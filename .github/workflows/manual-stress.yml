@@ -1,0 +1,74 @@
+name: Outbox Stress (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      workers:
+        description: Independent PHP processes per database engine
+        required: true
+        type: choice
+        options: ['10', '100', '500']
+        default: '100'
+
+permissions:
+  contents: read
+
+jobs:
+  stress:
+    name: ${{ matrix.db }} · ${{ inputs.workers }} workers
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        db: [mysql, pgsql]
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root_flowguard_ci
+          MYSQL_DATABASE: flowguard_ci
+          MYSQL_USER: flowguard
+          MYSQL_PASSWORD: flowguard
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uflowguard -pflowguard"
+          --health-interval=10s --health-timeout=5s --health-retries=12
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: flowguard_ci
+          POSTGRES_USER: flowguard
+          POSTGRES_PASSWORD: flowguard
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd="pg_isready -U flowguard -d flowguard_ci"
+          --health-interval=10s --health-timeout=5s --health-retries=12
+    env:
+      FLOWGUARD_CONCURRENCY_TEST: '1'
+      FLOWGUARD_TEST_DATABASE: flowguard_ci
+      FLOWGUARD_TEST_DRIVER: ${{ matrix.db }}
+      FLOWGUARD_TEST_HOST: 127.0.0.1
+      FLOWGUARD_TEST_PORT: ${{ matrix.db == 'mysql' && '3306' || '5432' }}
+      FLOWGUARD_TEST_USERNAME: flowguard
+      FLOWGUARD_TEST_PASSWORD: flowguard
+      FLOWGUARD_STRESS_WORKERS: ${{ inputs.workers }}
+      FLOWGUARD_STRESS_LARGE_RUN: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_mysql, pdo_pgsql
+          coverage: none
+          tools: composer:v2
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Run independent-worker contention benchmark
+        run: php benchmarks/lease-contention.php
+      - name: Explain benchmark scope
+        if: always()
+        run: |
+          echo 'The output above measures disposable CI containers only.'
+          echo 'Failed 500-process runs may indicate runner memory, process or DB connection limits.'
+          echo 'Do not extrapolate GitHub-hosted runner results into production SLAs.'
