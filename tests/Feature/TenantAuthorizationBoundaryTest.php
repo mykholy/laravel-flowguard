@@ -65,7 +65,7 @@ final class TenantAuthorizationBoundaryTest extends TestCase
         $memberships = $this->memberships;
         $policy = new class($memberships) implements EvidenceAuthorization
         {
-            /** @param array<string, string> $memberships */
+            /** @param  array<string, string>  $memberships */
             public function __construct(private array $memberships) {}
 
             public function assertCanRecord(string $actorReference, OperationSnapshot $operation): void
@@ -100,7 +100,7 @@ final class TenantAuthorizationBoundaryTest extends TestCase
         $memberships = $this->memberships;
         $policy = new class($memberships) implements ResolutionAuthorization
         {
-            /** @param array<string, string> $memberships */
+            /** @param  array<string, string>  $memberships */
             public function __construct(private array $memberships) {}
 
             public function assertApproved(
