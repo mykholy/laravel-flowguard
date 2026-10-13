@@ -40,15 +40,15 @@ jobs:
           php artisan key:generate
           php artisan migrate --force
           php artisan flowguard:doctor
-      - name: Verify framework integration
-        working-directory: smoke-app
-        env:
-          APP_ENV: testing
-          DB_CONNECTION: sqlite
-        run: php ../tests/Installation/verify.php
       - name: Verify lease migration against existing data
         working-directory: smoke-app
         env:
           APP_ENV: testing
           DB_CONNECTION: sqlite
         run: php ../tests/Installation/outbox-upgrade.php
+      - name: Verify framework integration
+        working-directory: smoke-app
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+        run: php ../tests/Installation/verify.php
