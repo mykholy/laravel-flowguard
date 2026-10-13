@@ -56,3 +56,18 @@ against a copy of existing data before deploying.
 
 A passing installation diagnostic validates only the local schema, not remote
 provider safety or multi-tenant authorization correctness.
+
+## Lease migration rollback limits
+
+Before downgrading the outbox lease schema, stop all dispatchers and
+verify that **no active leases exist**. A schema rollback removes lease
+tokens, attempt counters, retry delays and delivery timestamps; it is not
+a safe replay or rollback of externally published messages. It must never
+be used as a way to reset exhausted attempts.
+
+`tests/Installation/outbox-upgrade.php` exercises the lease migration
+down/up directly against an existing pending outbox record in a disposable
+Laravel application. It verifies that the pending event survives. It does
+**not** guarantee zero-downtime migration or a safe downgrade of a live
+database with in-flight workers. Full backup/restore and engine-specific
+rollout testing remain mandatory before a stable release.
