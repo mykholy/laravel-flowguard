@@ -19,32 +19,31 @@ if (! $app->environment('testing')) {
 $connection = DB::connection(config('flowguard.connection'));
 $schema = Schema::connection(config('flowguard.connection'));
 
-$eventKey = 'upgrade-'.bin2hex(random_bytes(8));
-$message = $connection->transaction(static fn () => (new DatabaseOutboxRecorder($connection))
-    ->record('tenant.install', $eventKey, 'migration.checked', 'upgrade-'.$eventKey));
-
 $migration = require dirname(__DIR__, 2).'/database/migrations/2026_10_12_000005_add_flowguard_outbox_lease_columns.php';
+
+if ($connection->table('flowguard_outbox')->exists()
+    || $connection->table('flowguard_operations')->exists()
+    || $connection->table('flowguard_inbox')->exists()) {
+    throw new RuntimeException('Upgrade fixture requires an empty disposable Flowguard database.');
+}
 
 if (! $schema->hasColumn('flowguard_outbox', 'delivery_attempts')) {
     throw new RuntimeException('Lease migration was not applied initially.');
 }
 
-if ($connection->table('flowguard_outbox')->where('status', 'leased')->exists()) {
-    throw new RuntimeException('Rollback precondition failed: active outbox leases exist.');
-}
-
-// Exercise only the lease-column migration against an already populated table.
-// These migration calls do not change the Laravel migrations bookkeeping table.
+// Roll back only while all tables are empty. This models the preceding
+// schema version; no live data or lease token is removed.
 $migration->down();
 
 if ($schema->hasColumn('flowguard_outbox', 'delivery_attempts')) {
-    throw new RuntimeException('Lease rollback left the delivery_attempts column.');
+    throw new RuntimeException('Pre-upgrade schema still contains lease columns.');
 }
 
-if ($connection->table('flowguard_outbox')->where('id', $message->id)->value('status') !== 'pending') {
-    throw new RuntimeException('Lease rollback deleted or modified a pending outbox record.');
-}
+$eventKey = 'upgrade-'.bin2hex(random_bytes(8));
+$message = $connection->transaction(static fn () => (new DatabaseOutboxRecorder($connection))
+    ->record('tenant.install', $eventKey, 'migration.checked', 'upgrade-'.$eventKey));
 
+// Forward upgrade must preserve a pending event written under the old schema.
 $migration->up();
 
 $row = $connection->table('flowguard_outbox')->where('id', $message->id)->first();
@@ -59,4 +58,4 @@ if (! $schema->hasColumn('flowguard_outbox', 'lease_hash')
     throw new RuntimeException('Required lease columns were not restored.');
 }
 
-echo "Lease migration down/up preserved a populated pending outbox row.\n";
+echo "Forward lease migration preserved a populated pending outbox row.\n";
