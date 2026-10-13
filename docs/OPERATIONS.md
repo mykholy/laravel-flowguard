@@ -7,7 +7,9 @@ and operational access control.
 ## Before enabling in an environment
 
 1. Back up the application database and apply migrations in a staging clone.
-2. Run php artisan flowguard:doctor after updating the package.
+2. Run php artisan flowguard:doctor after updating the package. The doctor
+   verifies required tables, lease columns and unique keys used to prevent
+   duplicate operations, inbox receipts and outbox events.
 3. Verify every tenant's API/webhook credentials and receipt signature checks.
 4. Confirm that the outbox, inbox and business tables use the same durable
    database connection when atomicity is required.
