@@ -1,5 +1,36 @@
 # Publishing an outbox message
 
+## Opt-in Artisan delivery
+
+The package provides a **single-attempt** command; it is never scheduled
+automatically. In the host application's service provider, bind an audited
+publisher to the public contract:
+
+```php
+$this->app->bind(
+    \Mykholy\Flowguard\Contracts\OutboxPublisher::class,
+    \App\Messaging\VerifiedOutboxPublisher::class,
+);
+```
+
+The application-defined publisher must validate the tenant scope, load an
+immutable or correctly versioned event snapshot, and use the message ID as a
+destination idempotency key. Its HTTP timeout must be shorter than the lease.
+
+```bash
+php artisan flowguard:dispatch-once --lease=60 --retry=60 --max-attempts=10
+```
+
+The command delivers **at most one** eligible message and exits. It rejects a
+missing publisher binding or invalid limits and exposes only the exception
+class (not the provider error text) on failure. Run it from a supervised worker
+or an explicitly configured Laravel scheduler. Its failure exit status must be
+monitored; a failed remote call can already have succeeded upstream.
+
+A queue adapter, high-throughput dispatcher and automatic schedule are **not**
+bundled. Do not run it inside a business transaction, do not log raw
+exceptions, and do not treat a command retry as exactly-once delivery.
+
 The host application implements \`OutboxPublisher\`. Its \`publish(OutboxMessage $message)\`
 method must only return after the destination durably acknowledges the event.
 
@@ -30,5 +61,5 @@ reference. It never receives the lease token.
 - A crash after publishing and before acknowledgement causes redelivery.
 
 **Delivery is at-least-once. Exactly-once side effects are not promised.**
-This is a contract and manual dispatch primitive; there is no scheduled
-worker, transport implementation or ready-to-run integration yet.
+The package ships a bounded CLI orchestration primitive, not an automatic
+scheduler, provider transport or guarantee of end-to-end delivery.
