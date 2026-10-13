@@ -101,6 +101,7 @@ try {
         $exit = proc_close($process);
         if ($exit !== 0) {
             $failures[] = trim((string) $error);
+
             continue;
         }
 
