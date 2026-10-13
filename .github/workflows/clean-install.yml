@@ -2,7 +2,12 @@ name: Clean Laravel Installation
 
 on:
   push:
+    branches: [main]
   pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -40,15 +45,15 @@ jobs:
           php artisan key:generate
           php artisan migrate --force
           php artisan flowguard:doctor
-      - name: Verify lease migration against existing data
-        working-directory: smoke-app
-        env:
-          APP_ENV: testing
-          DB_CONNECTION: sqlite
-        run: php ../tests/Installation/outbox-upgrade.php
       - name: Verify framework integration
         working-directory: smoke-app
         env:
           APP_ENV: testing
           DB_CONNECTION: sqlite
         run: php ../tests/Installation/verify.php
+      - name: Verify populated lease schema upgrade
+        working-directory: smoke-app
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+        run: php ../tests/Installation/outbox-upgrade.php

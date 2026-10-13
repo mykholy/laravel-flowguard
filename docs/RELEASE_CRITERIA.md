@@ -15,6 +15,8 @@ Exactly-once external side effects are outside the library's guarantees.
 - [x] Test coverage for the reserved-worker crash point.
 - [x] Integration fixture for accepted-but-unacknowledged delivery.
 - [x] Laravel 12/13, PHP 8.3/8.4, MySQL 8 and PostgreSQL 16 CI matrix.
+- [x] Clean Laravel 12/13 install, operator diagnostics and database benchmarks.
+- [ ] Production host-auth policy has not been reviewed independently.
 
 ## Required before v1.0.0
 

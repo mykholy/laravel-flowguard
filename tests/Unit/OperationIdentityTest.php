@@ -21,6 +21,12 @@ final class OperationIdentityTest extends TestCase
         self::assertSame(64, strlen($first->keyHash));
     }
 
+    public function test_tenant_scope_supports_colons_like_inbox_and_outbox(): void
+    {
+        $identity = OperationIdentity::from('tenant.42:payments', 'capture-42', ['amount_minor' => 100]);
+        self::assertSame('tenant.42:payments', $identity->scope);
+    }
+
     public function test_invalid_scope_is_rejected(): void
     {
         $this->expectException(InvalidArgumentException::class);
