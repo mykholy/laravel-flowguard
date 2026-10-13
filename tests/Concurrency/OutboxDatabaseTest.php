@@ -230,6 +230,48 @@ final class OutboxDatabaseTest extends TestCase
         }
     }
 
+    public function test_reservation_skips_the_first_row_locked_by_another_connection(): void
+    {
+        $recorder = new DatabaseOutboxRecorder($this->db, $this->outbox);
+
+        $this->db->transaction(function () use ($recorder): void {
+            $recorder->record('tenant.42:orders', 'held-by-transaction', 'order.paid', 'order-1');
+            $recorder->record('tenant.42:orders', 'eligible-during-lock', 'order.paid', 'order-2');
+        });
+
+        $firstId = (string) $this->db->table($this->outbox)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->value('id');
+
+        $this->db->beginTransaction();
+
+        try {
+            $held = $this->db->table($this->outbox)
+                ->where('id', $firstId)
+                ->lockForUpdate()
+                ->first();
+
+            self::assertNotNull($held);
+
+            // A genuinely separate database connection must not wait for the
+            // first message when another pending record is available.
+            $other = \flowguardConcurrencyConnection();
+            $lease = (new DatabaseOutboxLeaseStore($other, $this->outbox))->reserve(60);
+
+            self::assertNotNull($lease);
+            self::assertNotSame($firstId, $lease->id);
+            self::assertSame(1, $lease->attempt);
+
+            (new DatabaseOutboxLeaseStore($other, $this->outbox))->acknowledge($lease);
+        } finally {
+            $this->db->rollBack();
+        }
+
+        self::assertSame('pending', $this->db->table($this->outbox)->where('id', $firstId)->value('status'));
+        self::assertSame(1, $this->db->table($this->outbox)->where('status', 'delivered')->count());
+    }
+
     public function test_killed_worker_leaves_recoverable_fenced_lease(): void
     {
         if (! function_exists('proc_open')) {

@@ -5,26 +5,14 @@
 The application constructs a DatabaseOutboxLeaseStore using the **same durable
 database connection** as its outbox recorder.
 
-    $store = new DatabaseOutboxLeaseStore(DB::connection());
+    $dispatcher = new OutboxDispatcher(
+        new DatabaseOutboxLeaseStore(DB::connection()),
+        app(OutboxPublisher::class),
+        app(LoggerInterface::class),
+    );
 
-    $lease = $store->reserve(60);
-
-    if ($lease === null) {
-        return;
-    }
-
-    try {
-        // Publisher must be idempotent and load an authorized snapshot
-        // using $lease->scope, $lease->topic, $lease->subjectReference.
-        $publisher->publish($lease);
-    } catch (\Throwable $exception) {
-        // Map the exception to a safe machine code; never store raw text.
-        $store->release($lease, 'publish_failed', 120);
-        return;
-    }
-
-    // Acknowledge only after publish succeeds. Handle lease loss separately.
-    $store->acknowledge($lease);
+    // Run outside a business transaction, from a supervised worker.
+    $dispatcher->dispatchOne();
 
 This is a usage illustration, **not a built-in worker**. Do not blindly treat
 LeaseLost as a publish failure: the lease may have expired and another worker
@@ -46,8 +34,11 @@ failure and infer that the remote system never received the message.
   automatically eligible for **reservation**, not automatically published.
 - Messages reaching maxAttempts (default 10) stop being reserved. An operator
   must inspect or deliberately intervene; this increment offers no reset API.
-- No SKIP LOCKED strategy yet: row-level locks serialize concurrent reservations
-  on MySQL/PostgreSQL. This is deliberate for an initial correctness baseline.
+- MySQL 8 and PostgreSQL 16 use `FOR UPDATE SKIP LOCKED` so competing
+  workers can reserve another eligible row instead of waiting for a locked
+  message. Returning `null` does not prove no messages exist: every eligible
+  row may be locked by another transaction. The next poll can retry.
+  SQLite remains a development-only fallback with no row-level locks.
 
 ## Limits
 
@@ -57,8 +48,8 @@ publish again. Consumers need durable idempotency independent of Flowguard.
 
 Host applications must isolate tenant-scoped publishers, protect operator
 access, and avoid putting secrets in subject references or failure codes.
-Redis/queue integrations, dispatcher processes, read-only management commands,
-retention and throughput benchmarks are future increments.
+A host-bound single-message CLI dispatcher and read-only operational commands
+are provided; scheduled workers and provider-specific transports are not.
 
 Re-check database behavior on MySQL and PostgreSQL with independent workers
 before relying on this in production. SQLite tests are development-only.
