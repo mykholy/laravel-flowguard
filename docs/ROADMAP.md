@@ -7,8 +7,10 @@
 - [x] Conditional finalization and unknown-outcome state
 - [x] Laravel discovery and migrations
 - [x] PHP 8.3/8.4 and MySQL/PostgreSQL initial CI coverage
-- [ ] Worker-kill fault injection and larger stress runs
-- [ ] Benchmark write path and validate operational cost
+- [x] Worker-kill fault injection (reservation crash point)
+- [ ] Larger stress runs and provider-accepted crash scenarios
+- [x] Disposable database write-path benchmark
+- [ ] Representative production capacity and regression thresholds
 
 ## Phase B — safe reconciliation [partial]
 
@@ -16,7 +18,8 @@
 - [x] Reconciler contract and typed, bounded evidence
 - [x] Opt-in evidence journal with application authorization and transactional append
 - [x] No raw provider-reference storage in journal records
-- [ ] Authorization and tenant isolation end-to-end example
+- [x] Host-authorization tenant isolation regression fixture
+- [ ] Independently reviewed production authorization integration
 - [x] Initial conflict-aware CAS classification with mandatory host-app approval contract
 - [ ] Built-in approval collection is intentionally out of scope; validate a real host implementation
 - [x] Initial provider evidence freshness guards and independent-process review race tests
@@ -28,10 +31,10 @@
 - [ ] Optional Laravel Queue / Spatie Webhook Client adapters
 - [x] Transactional outbox recording boundary with MySQL/PostgreSQL tests
 - [x] Initial reservation, fencing, acknowledgement and bounded retry primitives
-- [ ] Independent-process lease contention and fault-injection tests
+- [x] Independent-process reservation contention and crash-point tests
 - [x] Single-delivery publisher contract and orchestration (host-supplied publisher)
 - [ ] Production publisher example, timeouts and consumer idempotency validation
-- [ ] Durable inbound event inbox
+- [x] Durable inbound event inbox (verified-event acceptance boundary)
 - [ ] Optional UI without forced Filament or Livewire dependency
 - [ ] Sandbox-only example integrations and versioned docs
 
