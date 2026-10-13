@@ -34,3 +34,17 @@ at-rest encryption for result metadata yet. These must be addressed prior to dec
 production readiness. Configuration and database credentials are trusted deployment data.
 
 Report suspected vulnerabilities privately; do not attach production payloads or secrets to public issues.
+
+## Owner capability handling
+
+`Claim` and `OutboxLease` contain short-lived secret capabilities. Their
+diagnostic views redact those secrets, and their serialization and restoration
+hooks reject queue/session transport. Keep these objects **in memory and within
+the current request or worker execution**, not in queued jobs, cache values or
+session payloads. Pass only non-sensitive IDs across process boundaries and
+re-acquire ownership through the documented workflow.
+
+These guards do not protect against PHP reflection, unrestricted memory dumps,
+explicit property extraction, `var_export`, or logging the raw constructor
+arguments. Never pass entire capabilities to application loggers or error
+reporters. An externally compromised process can still read its own memory.
