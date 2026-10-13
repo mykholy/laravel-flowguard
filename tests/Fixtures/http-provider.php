@@ -5,7 +5,7 @@ declare(strict_types=1);
 // An isolated HTTP fixture, not a webhook verifier or a real payment gateway.
 $path = getenv('FLOWGUARD_TEST_PROVIDER_STATE');
 
-if (is_string($path) === false || $path === '') {
+if (! is_string($path) || $path === '') {
     http_response_code(500);
 
     exit;
@@ -27,11 +27,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || $_SERVER['REQUEST_URI'] !== '/event
 try {
     $data = json_decode((string) file_get_contents('php://input'), true, 512, JSON_THROW_ON_ERROR);
 
-    if (is_array($data) === false
-        || is_string($data['id'] ?? null) === false
+    if (! is_array($data)
+        || ! is_string($data['id'] ?? null)
         || preg_match('/^[a-f0-9-]{36}$/D', $data['id']) !== 1
-        || is_string($data['scope'] ?? null) === false
-        || is_string($data['topic'] ?? null) === false) {
+        || ! is_string($data['scope'] ?? null)
+        || ! is_string($data['topic'] ?? null)) {
         throw new InvalidArgumentException('Invalid provider fixture event.');
     }
 
@@ -47,7 +47,7 @@ try {
         $state = $contents === '' ? ['requests' => 0, 'events' => []]
             : json_decode((string) $contents, true, 512, JSON_THROW_ON_ERROR);
 
-        if (is_array($state) === false || is_array($state['events'] ?? null) === false) {
+        if (! is_array($state) || ! is_array($state['events'] ?? null)) {
             throw new RuntimeException('Invalid provider fixture state.');
         }
 
