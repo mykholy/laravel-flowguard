@@ -96,6 +96,10 @@ jobs:
             composer require --dev 'orchestra/testbench:^11.0' 'laravel/framework:^13.0' --with-all-dependencies --no-interaction --no-progress
           fi
       - run: composer test:concurrency
+      - name: Verify independent-worker outbox contention baseline
+        env:
+          FLOWGUARD_STRESS_WORKERS: '10'
+        run: php benchmarks/lease-contention.php
       - name: Measure outbox recording on disposable database
         env:
           FLOWGUARD_BENCH_ITERATIONS: '250'
