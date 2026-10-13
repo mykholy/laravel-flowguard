@@ -12,6 +12,7 @@ use Mykholy\Flowguard\Outbox\OutboxLease;
 use Mykholy\Flowguard\Outbox\OutboxMessage;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use RuntimeException;
 
 final class OutboxDispatcherTest extends TestCase
@@ -29,7 +30,7 @@ final class OutboxDispatcherTest extends TestCase
         $leases->expects(self::once())->method('reserve')->willReturn(null);
         $publisher->expects(self::never())->method('publish');
 
-        self::assertFalse((new OutboxDispatcher($leases, $publisher, $this->createMock(LoggerInterface::class)))->dispatchOne());
+        self::assertFalse((new OutboxDispatcher($leases, $publisher, new NullLogger))->dispatchOne());
     }
 
     public function test_it_acknowledges_only_after_successful_publishing(): void
@@ -53,7 +54,7 @@ final class OutboxDispatcherTest extends TestCase
             });
         $leases->expects(self::never())->method('release');
 
-        self::assertTrue((new OutboxDispatcher($leases, $publisher, $this->createMock(LoggerInterface::class)))->dispatchOne());
+        self::assertTrue((new OutboxDispatcher($leases, $publisher, new NullLogger))->dispatchOne());
     }
 
     public function test_publishing_failure_releases_the_lease(): void
@@ -63,12 +64,12 @@ final class OutboxDispatcherTest extends TestCase
         $publisher = $this->createMock(OutboxPublisher::class);
 
         $leases->method('reserve')->willReturn($lease);
-        $publisher->method('publish')->willThrowException(new RuntimeException('delivery failed'));
+        $publisher->expects(self::once())->method('publish')->willThrowException(new RuntimeException('delivery failed'));
         $leases->expects(self::once())->method('release')->with($lease, 'publish_failed', 60);
         $leases->expects(self::never())->method('acknowledge');
 
         $this->expectException(RuntimeException::class);
-        (new OutboxDispatcher($leases, $publisher, $this->createMock(LoggerInterface::class)))->dispatchOne();
+        (new OutboxDispatcher($leases, $publisher, new NullLogger))->dispatchOne();
     }
 
     public function test_release_failure_is_reported_without_masking_the_publish_error(): void
@@ -78,9 +79,9 @@ final class OutboxDispatcherTest extends TestCase
         $publisher = $this->createMock(OutboxPublisher::class);
         $logger = $this->createMock(LoggerInterface::class);
 
-        $leases->method('reserve')->willReturn($lease);
-        $publisher->method('publish')->willThrowException(new RuntimeException('upstream-error'));
-        $leases->method('release')->willThrowException(new LeaseLost);
+        $leases->expects(self::once())->method('reserve')->willReturn($lease);
+        $publisher->expects(self::once())->method('publish')->willThrowException(new RuntimeException('upstream-error'));
+        $leases->expects(self::once())->method('release')->willThrowException(new LeaseLost);
         $logger->expects(self::once())->method('error')->with(
             'Could not release failed outbox delivery.',
             self::callback(static fn (array $context): bool => $context['outbox_id'] === 'e-1'
@@ -103,6 +104,6 @@ final class OutboxDispatcherTest extends TestCase
         $leases->expects(self::never())->method('release');
 
         $this->expectException(LeaseLost::class);
-        (new OutboxDispatcher($leases, $publisher, $this->createMock(LoggerInterface::class)))->dispatchOne();
+        (new OutboxDispatcher($leases, $publisher, new NullLogger))->dispatchOne();
     }
 }
