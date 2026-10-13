@@ -68,13 +68,15 @@ jobs:
           sudo apt-get install -y -qq default-mysql-client postgresql-client
       - name: Create isolated SQL outbox fixture
         run: php tests/Installation/native-backup-restore.php prepare
-      - name: Export and restore MySQL table in another disposable database
+      - name: Prepare linked audit-record fixtures
+        run: php tests/Installation/native-relational-restore.php prepare
+      - name: Export and restore MySQL tables in another disposable database
         if: matrix.db == 'mysql'
         env:
           MYSQL_PWD: flowguard
         run: |
           MYSQL_PWD=root_flowguard_ci mysql -h 127.0.0.1 -u root -e "CREATE DATABASE flowguard_restore_ci; GRANT ALL PRIVILEGES ON flowguard_restore_ci.* TO 'flowguard'@'%';"
-          mysqldump -h 127.0.0.1 -u flowguard --single-transaction --no-tablespaces --skip-lock-tables flowguard_ci fg_restore_fixture > /tmp/flowguard-restore.sql
+          mysqldump -h 127.0.0.1 -u flowguard --single-transaction --no-tablespaces --skip-lock-tables flowguard_ci fg_restore_fixture fg_restore_operation fg_restore_evidence fg_restore_resolution > /tmp/flowguard-restore.sql
           mysql -h 127.0.0.1 -u flowguard flowguard_restore_ci < /tmp/flowguard-restore.sql
       - name: Export and restore PostgreSQL table in another disposable database
         if: matrix.db == 'pgsql'
@@ -82,7 +84,9 @@ jobs:
           PGPASSWORD: flowguard
         run: |
           psql -h 127.0.0.1 -U flowguard -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE flowguard_restore_ci"
-          pg_dump -h 127.0.0.1 -U flowguard -d flowguard_ci --no-owner --no-privileges -t public.fg_restore_fixture --format=plain > /tmp/flowguard-restore.sql
+          pg_dump -h 127.0.0.1 -U flowguard -d flowguard_ci --no-owner --no-privileges -t public.fg_restore_fixture -t public.fg_restore_operation -t public.fg_restore_evidence -t public.fg_restore_resolution --format=plain > /tmp/flowguard-restore.sql
           psql -h 127.0.0.1 -U flowguard -d flowguard_restore_ci -v ON_ERROR_STOP=1 -f /tmp/flowguard-restore.sql
       - name: Assert restored states and resume pending delivery
         run: php tests/Installation/native-backup-restore.php verify
+      - name: Assert linked audit records and foreign key constraints
+        run: php tests/Installation/native-relational-restore.php verify
