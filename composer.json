@@ -1,12 +1,14 @@
 {
   "$schema": "https://getcomposer.org/schema.json",
   "name": "mykholy/laravel-flowguard",
-  "description": "A fail-closed idempotent operation lifecycle for critical Laravel business actions.",
+  "description": "Fail-closed Laravel operations with idempotency, reconciliation, durable inbox/outbox, and fenced delivery.",
   "type": "library",
   "license": "MIT",
   "keywords": [
     "laravel",
     "idempotency",
+    "inbox",
+    "outbox",
     "payments",
     "webhooks",
     "reliability",
