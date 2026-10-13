@@ -50,7 +50,7 @@
     }
   },
   "scripts": {
-    "test": "phpunit -c phpunit.xml.dist --testsuite Unit,Feature --display-phpunit-notices",
+    "test": "phpunit -c phpunit.xml.dist --testsuite Unit,Feature --display-phpunit-notices --fail-on-phpunit-notice",
     "analyse": "phpstan analyse -c phpstan.neon.dist --memory-limit=1G",
     "format": "pint",
     "format-check": "pint --test",
