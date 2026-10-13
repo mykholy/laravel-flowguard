@@ -47,3 +47,12 @@ letter or digit. Reusing the same scope for different tenants is still an
 application error.
 
 See [threat model](THREAT_MODEL.md) and [release criteria](RELEASE_CRITERIA.md).
+
+## Outbox worker isolation
+
+Applications with per-tenant transport credentials should construct
+`DatabaseOutboxLeaseStore` with the optional `scope` argument and a scope
+derived from server-side tenant configuration. A scoped worker cannot reserve,
+acknowledge or release rows outside that scope. The default unscoped store
+is appropriate only where the publisher is authorized for every eligible
+tenant. Tenant matching is an additional guard, not authentication.
