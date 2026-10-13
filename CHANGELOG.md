@@ -15,7 +15,7 @@ describe the current development branch and do not imply release guarantees.
   expiring leases and application-defined publisher contracts.
 - An opt-in single-message Artisan publisher and read-only installation,
   stale-operation and exhausted-message diagnostics.
-- Laravel 12/13, PHP 8.3/8.4, MySQL 8 and PostgreSQL 16 CI coverage, including
+- Laravel 12/13, PHP 8.3/8.4/8.5, MySQL 8 and PostgreSQL 16 CI coverage, including
   independent-process failure injection and clean framework installation.
 - Disposable SQL contention benchmarks and a separately opt-in 100/500-process
   test workflow; **the large workloads are not yet validated**.
