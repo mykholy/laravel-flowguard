@@ -77,6 +77,7 @@ final class StripeSandbox
             throw new RuntimeException('stripe_test_intent_required');
         }
         $this->assertIntentId($data['id'] ?? '');
+
         // Deliberately discard client_secret, card details, and all other response fields.
         return array_intersect_key($data, array_flip(['id', 'object', 'livemode', 'status', 'amount', 'currency', 'metadata', 'latest_charge']));
     }
