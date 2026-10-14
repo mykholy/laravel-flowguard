@@ -165,9 +165,10 @@ transaction. The caller must use the **same database connection** for both
 writes and scope event identities by tenant. Duplicates fail through a database
 unique constraint.
 
-This increment **does not dispatch messages**. Recorded rows remain pending;
-leasing and publishing are separate features. See the experimental reservation
-API below; automatic dispatch is still not provided.
+Recording does **not** publish or enqueue anything. A separately configured
+`OutboxDispatcher` or `flowguard:dispatch-once` command can deliver a pending
+message using an application-bound `OutboxPublisher`. There is no bundled
+provider transport, automatic schedule or background daemon.
 See [outbox recording design](docs/RFC-003-OUTBOX.md).
 
 ## Outbox reservation lifecycle (experimental)
@@ -180,8 +181,9 @@ expired or replaced leases cannot acknowledge delivery. Attempts are capped
 
 Consumers **must** support duplicate delivery. A publisher may succeed while
 its worker crashes before acknowledging the row. This is an at-least-once
-foundation, not exactly-once delivery, and there is no bundled publisher or
-background worker yet. See [lease contract](docs/RFC-003-LEASING.md).
+foundation, not exactly-once delivery. The host must supply a publisher and
+explicitly schedule its worker. See the [lease contract](docs/RFC-003-LEASING.md)
+and [publishing guide](docs/PUBLISHING.md).
 
 ## Correctness and versioning policy
 
@@ -189,8 +191,9 @@ background worker yet. See [lease contract](docs/RFC-003-LEASING.md).
 - No TTL-based automatic lock reclaim. Recovery requires reconciliation.
 - Only application-verified, authorized, validated requests reach the engine.
 - Do not store raw PII, gateway secrets, or complete response bodies in result metadata.
-- No SLA and no semantic version stability in this pre-alpha starter.
-- Initial independent-process tests run on disposable MySQL/PostgreSQL databases in CI; expanded crash/fault testing remains pending.
+- No SLA or stable public API guarantee until the v1.0.0 release gates are met.
+- Independent-process concurrency, crash injection and SQL restore tests run in
+  CI. They do not replace a real-provider pilot or independent security review.
 
 ## Contribution
 
