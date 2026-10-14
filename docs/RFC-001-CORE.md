@@ -1,6 +1,7 @@
-# RFC-001: Durable idempotent claims (experimental)
+# RFC-001: Durable idempotent claims
 
-**Status:** Implemented prototype; NOT production validated (2026-10-12).
+**Status:** Design implemented; supported v1 contracts are defined in
+[PUBLIC_API.md](PUBLIC_API.md). No independent production security audit is claimed.
 
 ## Problem
 

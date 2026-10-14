@@ -2,11 +2,12 @@
 
 **Durable business-operation primitives for Laravel 12 and 13.**
 
-> **Release status: public beta (`v0.1.0-beta.3`), no stable tag yet.** The implementation
-> passes an automated Laravel 12/13, PHP 8.3/8.4/8.5, MySQL 8 and PostgreSQL 16
-> compatibility matrix. Passing CI does not establish real-provider safety.
-> Do not use Flowguard to capture live payments until the
-> [release criteria](docs/RELEASE_CRITERIA.md) are closed.
+> **Stable contract: v1.0.0.** Supports Laravel 12/13 and PHP 8.3/8.4/8.5,
+> with SQLite, MySQL 8 and PostgreSQL 16 validation. The supported PHP API and
+> persisted schema follow [SemVer](docs/PUBLIC_API.md).
+> This release has **not received an independent human security audit** and does
+> not certify a host application's payment integration. Review the
+> [release scope and evidence](docs/RELEASE_CRITERIA.md) before production use.
 
 Flowguard solves a different problem from Telescope, Horizon and Pulse:
 **who is allowed to execute a business operation, whether the outcome is known,
@@ -34,20 +35,17 @@ PHP 8.3+, Laravel 12/13, a transactional database and Composer 2.
 CI tests Laravel 12/13 on PHP 8.3/8.4/8.5, plus MySQL 8 and PostgreSQL 16.
 
 The package is published on [Packagist](https://packagist.org/packages/mykholy/laravel-flowguard).
-Use the pinned beta version in an isolated evaluation application:
+Install the supported 1.x series:
 
 ```bash
-composer require mykholy/laravel-flowguard:0.1.0-beta.3
+composer require mykholy/laravel-flowguard:^1.0
 php artisan migrate
 php artisan flowguard:doctor
 ```
 
-The beta is a prerelease. Public APIs and schemas may change before 1.0;
-review the [release notes](https://github.com/mykholy/laravel-flowguard/releases/tag/v0.1.0-beta.3)
-and [release criteria](docs/RELEASE_CRITERIA.md). While the tag is being indexed,
-`dev-main` remains available for development use.
-
-Do not use the development branch with real payments.
+Review the [v1.0.0 release notes](https://github.com/mykholy/laravel-flowguard/releases/tag/v1.0.0)
+and [upgrade procedure](docs/PACKAGE_RELEASE.md). Pin a released version in your
+lockfile and validate your own provider adapter before production deployment.
 
 ```bash
 composer install
@@ -117,7 +115,7 @@ according to provider semantics. A provider can charge successfully even when lo
 completion fails. Do not treat failed `complete()` as grounds for retrying the charge.
 See [RFC-001](docs/RFC-001-CORE.md) and [threat model](docs/THREAT_MODEL.md).
 
-## Experimental reconciliation inspection (in development)
+## Read-only reconciliation inspection
 
 A provider-specific `Reconciler` may **read** the external state of an operation
 explicitly marked `requires_reconciliation`. `ReconciliationInspector` returns
@@ -127,7 +125,7 @@ provider lookup. This is intentionally **not** an automated recovery system.
 
 See [RFC-002](docs/RFC-002-READ_ONLY.md) for the API and limits.
 
-## Opt-in durable reconciliation evidence journal (experimental)
+## Opt-in durable reconciliation evidence journal
 
 A provider observation is not permission to retry or complete a payment. Flowguard
 can now persist a **reduced, authorized audit observation** on the same database
@@ -141,10 +139,10 @@ connection, while leaving the operation in `requires_reconciliation`.
   payloads, headers or gateway responses.
 - Does **not** implement replay, capture, refund, or finalization.
 
-See [RFC-002 evidence journal](docs/RFC-002-EVIDENCE-JOURNAL.md). This remains experimental; multi-database fault-injection tests exist, but an
-independent security review and a real-provider pilot are release prerequisites.
+See [the evidence journal design](docs/RFC-002-EVIDENCE-JOURNAL.md). Host policies
+and provider adapters need application-specific security and integration review.
 
-## Opt-in manual outcome classification (experimental)
+## Opt-in manual outcome classification
 
 The optional `DatabaseManualResolver` can classify a previously unknown
 external outcome as `reconciled_success` or `reconciled_failure`. These statuses
@@ -161,7 +159,7 @@ an independently reviewed host-app policy.
 
 See [manual resolution RFC](docs/RFC-002-MANUAL-RESOLUTION.md).
 
-## Transactional outbox recording (experimental)
+## Transactional outbox recording
 
 `DatabaseOutboxRecorder` records a small, durable signal in the same database
 transaction as a business change. It refuses to record outside an active
@@ -175,7 +173,7 @@ message using an application-bound `OutboxPublisher`. There is no bundled
 provider transport, automatic schedule or background daemon.
 See [outbox recording design](docs/RFC-003-OUTBOX.md).
 
-## Outbox reservation lifecycle (experimental)
+## Outbox reservation lifecycle
 
 `DatabaseOutboxLeaseStore` allows a worker to reserve one pending message,
 acknowledge it after successful publishing, or release it with a bounded retry
@@ -195,7 +193,7 @@ and [publishing guide](docs/PUBLISHING.md).
 - No TTL-based automatic lock reclaim. Recovery requires reconciliation.
 - Only application-verified, authorized, validated requests reach the engine.
 - Do not store raw PII, gateway secrets, or complete response bodies in result metadata.
-- No SLA or stable public API guarantee until the v1.0.0 release gates are met.
+- The documented 1.x public API follows SemVer; no availability or delivery SLA is offered.
 - Independent-process concurrency, crash injection and SQL restore tests run in
   CI. They do not replace a real-provider pilot or independent security review.
 
@@ -209,8 +207,8 @@ MIT © 2026 Ahmed El-Kholy.
 
 ## API stability and upgrades
 
-The current [public API contract](docs/PUBLIC_API.md) is a **draft** checked by
-unit tests. No stable tag has been published. Operational retention and schema
+The [supported public API contract](docs/PUBLIC_API.md) is versioned from v1.0.0
+and checked by signature and behavior tests. Operational retention and schema
 rollback policies are described in [retention](docs/RETENTION.md) and the
 [operations runbook](docs/OPERATIONS.md).
 

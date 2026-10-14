@@ -1,78 +1,79 @@
-# v1.0.0 release criteria
+# v1.0.0 library release scope and acceptance
 
-**Current status: public beta. Stable acceptance gates remain open.**
-Passing automated tests is necessary but not sufficient for a library that
-coordinates business effects across independent systems. Flowguard never
-guarantees exactly-once external side effects.
+**Scope: a stable PHP and storage compatibility contract for Flowguard's library primitives.**
+A stable version does not certify a host application's payments, authorization,
+provider adapters, retention obligations or production capacity. No independent
+human security audit or independent adopter approval has been completed.
 
-## Automated evidence already available
+## Policy revision from the beta checklist
 
-- [x] Operation identity, claim ownership, fail-closed unknown outcomes and
-      explicit reconciliation classification tests.
-- [x] Durable inbox and transactional outbox handoff with deduplication,
-      concurrent claims and ambiguous provider acknowledgment fixtures.
-- [x] Fenced, expiring outbox leases; MySQL/PostgreSQL `SKIP LOCKED` and
-      tests with two independent SQL connections.
-- [x] A bounded, supervised-worker-compatible publishing contract and
-      read-only operational inspection commands.
-- [x] Laravel 12/13, PHP 8.3/8.4/8.5, MySQL 8 and PostgreSQL 16 CI matrix,
-      static analysis, formatting and production dependency audit.
-- [x] Standalone Laravel application discovery/migrations on SQLite,
-      MySQL and PostgreSQL.
-- [x] Independent process crash tests and a ten-process outbox contention
-      baseline on disposable CI databases.
-- [x] Native MySQL/PostgreSQL logical backup and restore **fixtures** for
-      selected outbox and reconciliation records.
-- [x] Populated schema upgrade rehearsal and destructive rollback protection.
-- [x] A draft public API contract, runbook, threat model and retention policy.
-- [x] Runnable multi-tenant checkout host with real local HTTP timeout and
-      independent worker-exit tests; full nonempty demo-host SQL restoration.
-- [x] Opt-in Stripe sandbox transport and GET-only recovery tooling, with
-      offline rejection/contract tests. Missing credentials are reported blocked;
-      this does not establish external-provider acceptance.
+The earlier beta policy required independent human reviews, representative
+customer staging and privacy-owner approval before any stable package tag.
+That combined package compatibility with deployment approval for an unspecified
+host. The maintainer has requested completion and publication of the package;
+this revision defines the bounded library release that can be verified here.
+It does **not** claim the earlier external tasks passed. Their status remains
+visible in issue #5 and the review/pilot documents. Production owners must
+complete the relevant application acceptance work before deployment.
 
-## Mandatory blockers before v1.0.0
+## Required package release evidence
 
-- [ ] **Independent human security sign-off** (see
-      [review handoff](INDEPENDENT_SECURITY_REVIEW.md)) on identity and tenant
-      authorization, provider signature verification, secrets, approval policy
-      and threat model in a real host application.
-- [ ] **Real staging integration with at least one external provider**
-      (see [pilot protocol](PROVIDER_STAGING_PILOT.md)):
-      inject duplicate events, timeout ambiguity, remote success before local
-      acknowledgement, process death, and reconciliation/retry.
-- [ ] **Repeated, representative 100/500-worker stress tests** on MySQL and
-      PostgreSQL, with measured lock waits, deadlocks, CPU/memory, error rates,
-      p95/p99, database connection ceilings and declared acceptance thresholds.
-      Three disposable CI runs per engine/workload now pass with explicit
-      correctness and latency thresholds (see [measured results](STABLE_READINESS.md)).
-      This synthetic workload does not establish representative host capacity.
-- [ ] **Full application backup/restore** on a nonempty MySQL/PostgreSQL
-      staging copy, with foreign-key consistency and resumed-worker safety;
-      isolated table restore fixtures do not close this requirement.
-- [ ] **Retention/privacy operational approval**, including replay horizons,
-      legal holds and data subject requests. Automatic pruning remains disabled.
-- [ ] **Independent adopter review** of the PHP contract and migration
-      compatibility, then a versioned supported API and final changelog.
-- [ ] **Maintainer release approval**, Packagist publication, provenance,
-      GitHub release notes and a verified tag after all gates are green.
+- [x] Documented public signatures, PHP named parameters, storage schema and
+      behavioral compatibility rules in [PUBLIC_API.md](PUBLIC_API.md).
+- [x] Fail-closed operation ownership, immutable payload identity, tenant-scoped
+      deduplication and explicit unknown-outcome handling regression tests.
+- [x] Transactional inbox/outbox recording, independent worker contention,
+      expiring fenced leases and duplicate-delivery/crash regression tests.
+- [x] Laravel 12/13 × PHP 8.3/8.4/8.5 quality matrix, static analysis,
+      formatting and production dependency audit.
+- [x] Fresh Laravel applications install the actual extracted Composer archive
+      on SQLite, MySQL 8 and PostgreSQL 16, including discovery/migrations/doctor.
+- [x] Populated forward-migration rehearsal and rejection of destructive
+      rollback; native package and full nonempty demo-host restoration on both
+      MySQL and PostgreSQL with resumed workers and foreign-key checks.
+- [x] Repeated synthetic 100/500-worker tests with declared correctness and
+      latency thresholds. [Measured results](STABLE_READINESS.md) describe the
+      workload, initial failures, correction and capacity limits.
+- [x] Runnable host integration with server-derived tenants, signed-event
+      contracts, host approvals, independent process faults and HTTP timeout.
+- [x] Bounded actual Stripe sandbox HTTPS evidence for read-only reconciliation
+      and a killed worker. [Provider evidence](PROVIDER_STAGING_PILOT.md) records
+      successful and failed scenarios without claiming full provider acceptance.
+- [x] Supported-version security policy, no automatic pruning, preserved
+      idempotency identities, operational diagnostics and upgrade guidance.
+- [ ] At publication: all four required workflow groups must pass on the exact
+      release commit; build and validate the runtime archive and checksum.
+- [ ] After publication: immutable tag, GitHub release, exact Packagist source
+      indexing and a fresh public Laravel install must be verified.
 
-The authoritative checklist is [GitHub issue #5](https://github.com/mykholy/laravel-flowguard/issues/5).
-Update the issue only with links to reproducible evidence. Do not check a
-human/provider acceptance gate merely because a simulated test passes.
+The last two checks are enforced by the publication workflow and recorded in
+its run. Source checkboxes above describe existing behavior/evidence; they do
+not substitute for those fresh exact-commit checks.
 
-## Semantic versioning commitments
+## Application acceptance still required
 
-After a stable release, public PHP signatures, named parameters, storage
-schemas, idempotency scopes and retry semantics are compatibility contracts.
-Breaking changes require a major version with a migration plan. Minor releases
-must never silently enable a new external effect or unsafe replay. Security
-hardening requires a documented behavior and upgrade review.
+| Requirement | Current evidence / limit | Responsible owner |
+| --- | --- | --- |
+| Independent security review | Not completed; [handoff](INDEPENDENT_SECURITY_REVIEW.md), issue #41 | Host owner and independent reviewer |
+| Provider-specific production validation | Partial real Stripe sandbox evidence; no live payment or full gateway certification | Host owner / gateway integrator |
+| Representative capacity | Synthetic measured load only; no universal throughput or latency SLA | Deployment operator |
+| Representative backup/restore | Nonempty demo host tested; customer's full staging clone unverified | Application / database operator |
+| Retention and privacy | Preserve-all default, pruning disabled; legal holds and replay horizons need local approval | Application / privacy owner |
+| Independent adoption review | Not completed, requested in issue #42 | Independent adopter |
 
-## Unsupported promises
+These are not checked off by a stable tag, automated tests, configured demo
+reviewer principals or this implementation review.
 
-Flowguard is not an authentication provider, an approval identity system,
-a gateway webhook signature verifier, a full queue engine, or a substitute for
-Telescope, Horizon or observability. Consumers must deduplicate external
-delivery independently and reconcile unknown outcomes with read-only provider
-checks.
+## Supported promises
+
+1.x follows SemVer for the documented public PHP signatures, named parameters,
+persisted storage and retry/authorization semantics. Breaking changes require
+a major version and migration guidance. No minor release may silently enable a
+new external effect or unsafe replay. Existing published tags are immutable.
+
+Flowguard provides no exactly-once external effect guarantee, authentication
+system, bundled payment gateway, automatic processing-claim recovery, automatic
+pruning or production certification. A process can die after a remote effect
+while its local claim remains `processing`; preserve that identity, investigate
+with the provider and never infer safe replay from its age. Outbox consumers
+must deduplicate downstream delivery independently.

@@ -1,7 +1,8 @@
-# Draft public API and compatibility policy
+# v1 public API and compatibility policy
 
-**Status: draft for independent review. No stable release or SemVer
-compatibility guarantee has been published yet.**
+**Status: supported contract from v1.0.0.** This is a library API and storage
+compatibility commitment, not a certification of host policies or provider adapters.
+No independent human security audit has been completed.
 
 Flowguard coordinates business operations and transport identities. The public
 PHP surface, database migrations and behavioral safety rules are a single
@@ -59,7 +60,7 @@ use PHP named arguments, so renaming a parameter is a compatibility change.
 - Existing database records cannot be removed by an automatic migration
   rollback. Use reviewed forward migrations and backup/restore procedures.
 
-## Compatibility rules after a future v1.0.0 release
+## Compatibility rules from v1.0.0
 
 - MAJOR: public PHP signature or namespace changes, removal of supported
   events/options, incompatibility in persisted records, more permissive replay
@@ -72,8 +73,9 @@ use PHP named arguments, so renaming a parameter is a compatibility change.
 
 Before any release: review all public signatures, update this document and
 `CHANGELOG.md`, prove the Laravel/MySQL/PostgreSQL matrix, perform migration
-rehearsals, and obtain explicit maintainer and independent security approval.
-CI passing alone does not authorize a stable tag.
+rehearsals, inspect the source diff and publish immutable commit-linked artifacts.
+Independent host security review remains a production integration requirement,
+not a claim made by the package version. See the revised release scope below.
 
 For upgrade/restore safety, see [operations](OPERATIONS.md),
 [retention](RETENTION.md) and [release criteria](RELEASE_CRITERIA.md).

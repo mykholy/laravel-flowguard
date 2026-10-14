@@ -1,25 +1,25 @@
-name: Publish Versioned Beta
+name: Publish Versioned Release
 
 on:
   pull_request:
     paths:
       - .release/**
       - .github/workflows/publish-preview.yml
-      - tools/check-preview-release.cjs
+      - tools/check-preview-release*.cjs
       - tools/verify-public-install.sh
   push:
     branches: [main]
     paths:
       - .release/**
       - .github/workflows/publish-preview.yml
-      - tools/check-preview-release.cjs
+      - tools/check-preview-release*.cjs
       - tools/verify-public-install.sh
 
 permissions:
   contents: read
 
 concurrency:
-  group: flowguard-beta-${{ github.ref }}
+  group: flowguard-release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -27,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: node --test tools/check-preview-release.test.cjs
       - run: node tools/check-preview-release.cjs
 
   public-install:
@@ -43,7 +44,7 @@ jobs:
           extensions: zip, mbstring, dom, xml, pdo_sqlite, sqlite3
           coverage: none
           tools: composer:v2
-      - name: Verify existing beta from public Packagist
+      - name: Verify existing release from public Packagist
         shell: bash
         run: |
           tag=$(node -p "require('./.release/preview.json').tag")
@@ -100,7 +101,7 @@ jobs:
           extensions: zip, mbstring, dom, xml, pdo_sqlite, sqlite3
           coverage: none
           tools: composer:v2
-      - name: Build verified distribution and publish immutable beta
+      - name: Build verified distribution and publish immutable release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -109,18 +110,24 @@ jobs:
           tag=$(node -p "require('./.release/preview.json').tag")
           notes=$(node -p "require('./.release/preview.json').notes")
           if git rev-parse --verify "refs/tags/$tag" >/dev/null 2>&1; then
-            test "$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq .isPrerelease)" = true
-            echo 'Existing beta retained unchanged; resuming public installation verification.'
+            expected_prerelease=true
+            if [ "$(node -p "require('./.release/preview.json').channel || 'beta'")" = stable ]; then expected_prerelease=false; fi
+            test "$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq .isPrerelease)" = "$expected_prerelease"
+            echo 'Existing release retained unchanged; resuming public installation verification.'
             exit 0
           fi
           composer validate --strict
           composer archive --format=zip --dir=dist --file=flowguard
           php tools/check-distribution.php dist/flowguard.zip
           (cd dist && sha256sum flowguard.zip > flowguard.sha256)
+          release_flags=(--prerelease --latest=false)
+          if [ "$(node -p "require('./.release/preview.json').channel || 'beta'")" = stable ]; then
+            release_flags=(--latest)
+          fi
           gh release create "$tag" dist/flowguard.zip dist/flowguard.sha256 \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "Laravel Flowguard $tag" --notes-file "$notes" --prerelease --latest=false
-      - name: Wait for Packagist to index the exact beta commit
+            --title "Laravel Flowguard $tag" --notes-file "$notes" "${release_flags[@]}"
+      - name: Wait for Packagist to index the exact release commit
         uses: actions/github-script@v7
         with:
           script: |
@@ -140,8 +147,8 @@ jobs:
               core.info('Waiting for Packagist indexing.');
               await new Promise(resolve => setTimeout(resolve, 10000));
             }
-            throw new Error('GitHub beta published, but Packagist indexing is not verified. Check its update hook.');
-      - name: Install the public Packagist beta in a fresh Laravel application
+            throw new Error('GitHub release published, but Packagist indexing is not verified. Check its update hook.');
+      - name: Install the public Packagist release in a fresh Laravel application
         shell: bash
         run: |
           git fetch origin --tags

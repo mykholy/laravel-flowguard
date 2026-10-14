@@ -3,11 +3,14 @@
 declare(strict_types=1);
 
 use App\Demo\Checkout;
+use App\Demo\StripeWebhook;
 use App\Http\Middleware\DemoIdentity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Mykholy\Flowguard\Inbox\DatabaseInboxRecorder;
+
+Route::post('/demo/stripe/webhook', StripeWebhook::class);
 
 Route::middleware(DemoIdentity::class)->prefix('demo')->group(function (): void {
     Route::post('/orders', function (Request $request, Checkout $checkout) {

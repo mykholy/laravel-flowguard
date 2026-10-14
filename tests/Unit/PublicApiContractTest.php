@@ -29,8 +29,8 @@ use ReflectionMethod;
 use ReflectionParameter;
 
 /**
- * Draft semantic-versioning baseline for the consumer-facing extension points.
- * Update only with documented API review; this is not a v1 release declaration.
+ * Supported v1 semantic-versioning baseline for consumer-facing extension points.
+ * Update only with documented API and compatibility review.
  */
 final class PublicApiContractTest extends TestCase
 {

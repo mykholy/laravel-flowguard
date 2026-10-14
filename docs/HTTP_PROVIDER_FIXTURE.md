@@ -29,4 +29,5 @@ application data lives in a disposable SQLite database.
 
 This remains a local integration fixture, not a real-provider staging pilot.
 An independent security review and a representative external-provider pilot
-remain mandatory release criteria for v1.0.0.
+remain application-specific production acceptance tasks; see the
+[revised library release scope](RELEASE_CRITERIA.md).

@@ -1,9 +1,12 @@
 # External provider staging pilot
 
 Status: **partial real Stripe sandbox execution verified; full acceptance remains open**.
-See the [2026-10-14 sanitized evidence](evidence/stripe-sandbox-2026-10-14.md)
-for two real HTTPS test payments and read-only recovery. The local HTTP receiver
-in HTTP_PROVIDER_FIXTURE.md remains a protocol simulation.
+See the sanitized evidence for [real HTTPS payments and read-only recovery](evidence/stripe-sandbox-2026-10-14.md),
+[actual worker SIGKILL](evidence/stripe-process-death-2026-10-14.md) and
+[actual signed Stripe event delivery with duplication](evidence/stripe-webhooks-2026-10-14.md).
+The local HTTP receiver in HTTP_PROVIDER_FIXTURE.md remains a protocol simulation.
+These are bounded sandbox experiments, not full provider certification. The
+[library release scope](RELEASE_CRITERIA.md) does not mark this protocol complete.
 
 Use only an isolated external provider **sandbox** account and a test Laravel
 application. Do not run this procedure against live merchants, payouts,

@@ -1,10 +1,24 @@
 # Changelog
 
 This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-**No stable release has been published.** Versioned betas are evaluation
-releases and do not establish production readiness.
+## v1.0.0 — 2026-10-14
 
-## Unreleased
+First stable **library contract** release. The documented PHP signatures, named
+parameters, storage schema and fail-closed semantics now follow SemVer.
+Core runtime and migrations are unchanged from beta.3.
+
+- Add a host-owned Stripe webhook demo using the official SDK, strict tenant /
+  intent / amount binding, signed-event deduplication and negative contract tests.
+- Add reproducible real Stripe process-death and webhook evidence; keep each
+  tested boundary and unverified production condition explicit.
+- Enable stable publication only after exact-commit compatibility, archive,
+  demo and restore checks, then verify Packagist and a fresh public installation.
+- Publish the supported API, security support policy, upgrade procedure and
+  immutable artifact/checksum workflow.
+- Revise release policy to distinguish library compatibility from per-host
+  production certification. Independent human audit/adopter approval and
+  representative production staging remain uncompleted, not passed or waived
+  as evidence. See `docs/RELEASE_CRITERIA.md` for the explicit scope and limits.
 
 ## v0.1.0-beta.3 — 2026-10-14
 
