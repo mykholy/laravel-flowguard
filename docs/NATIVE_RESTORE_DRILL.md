@@ -18,24 +18,27 @@ database exactly flowguard_ci and restore target exactly flowguard_restore_ci.
 The verifier refuses any other database names. No application or payment
 provider is contacted.
 
-This test is stronger than simply checking migration scripts: it proves
-database-native data export, import and post-restore lease semantics for a
-representative outbox table on both supported SQL engines.
+The workflow also provisions a **clean Laravel 13 host application**, installs
+Flowguard from the current checkout, applies the actual package migrations,
+and populates every Flowguard table using the public operation, evidence,
+resolution, inbox and outbox APIs. It exports and restores the **entire**
+disposable database. On the restored copy it verifies real package foreign
+keys, audited resolution and inbound event linkage, and correct recovery of
+pending/leased/delivered message states.
 
 ## Not covered
 
-- The entire package schema and all foreign-key relationships.
 - A live application's consistent backup across order tables and outbox
   records taken in the same transaction snapshot.
 - PITR / binlog / WAL recovery, credentials/secrets, or encryption at rest.
 - Restore elapsed-time targets, multi-gigabyte datasets or active writers.
 - Restoring into a running production cluster without stopping publishers.
 
-The first stable release still requires a rehearsed full database restore
-of a nonempty representative staging application, verification of data
-integrity across all package tables, an audited encryption/retention policy
-and independent sign-off. Never use the demo credentials outside disposable
-GitHub Actions services.
+The first stable release still requires backup/restore on a **representative
+staging application**, including application-owned tenant data, gateway
+configuration and independently reviewed privacy/retention requirements.
+A disposable single-process test does not prove production recovery-point or
+recovery-time objectives. Never use these fixture credentials outside CI.
 
 ## Linked audit-record restoration
 
@@ -46,7 +49,7 @@ attempting to delete the referenced operation is rejected by the restored SQL
 foreign key. This catches native dump/import problems that a single-table
 snapshot would miss.
 
-The fixture intentionally uses representative schemas, not every column of
-all package migrations. A full backup/restore rehearsal of a populated host
-application, including tenant records and provider configurations, is still a
-separate release gate.
+The original relational fixture remains a focused foreign-key regression.
+The additional full-schema test uses all current Flowguard migrations and
+tables, but still only test-sized data and a disposable Laravel application.
+It is not a production host-application restore or a security assessment.
