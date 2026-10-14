@@ -23,7 +23,15 @@ jobs:
         tools: composer:v2
     - run: composer install --no-interaction --no-progress
     - name: Verify demo PHP formatting
-      run: vendor/bin/pint --test examples/checkout-demo
+      run: |-
+        if ! vendor/bin/pint --test examples/checkout-demo; then
+          vendor/bin/pint examples/checkout-demo
+          echo DEMO_FORMAT_PATCH_START
+          git diff -- examples | base64 -w0
+          echo
+          echo DEMO_FORMAT_PATCH_END
+          exit 1
+        fi
   demo-host:
     runs-on: ubuntu-latest
     timeout-minutes: 20
