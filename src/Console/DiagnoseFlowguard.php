@@ -86,6 +86,49 @@ final class DiagnoseFlowguard extends Command
                 }
             }
 
+            // A table with the expected columns can still lose its foreign
+            // key constraints after a manual schema edit or partial restore.
+            // Check the actual database catalog, not migration filenames.
+            $requiredForeignKeys = [
+                'flowguard_reconciliation_evidence' => [
+                    ['operation_id', $operationsTable],
+                ],
+                'flowguard_resolution_decisions' => [
+                    ['operation_id', $operationsTable],
+                    ['evidence_id', 'flowguard_reconciliation_evidence'],
+                ],
+                'flowguard_inbox' => [
+                    ['outbox_id', 'flowguard_outbox'],
+                ],
+            ];
+
+            foreach ($requiredForeignKeys as $table => $relations) {
+                if (! $schema->hasTable($table)) {
+                    continue;
+                }
+
+                $foreignKeys = $schema->getForeignKeys($table);
+
+                foreach ($relations as [$column, $referencedTable]) {
+                    $found = false;
+
+                    foreach ($foreignKeys as $foreignKey) {
+                        if ($foreignKey['columns'] === [$column]
+                            && $foreignKey['foreign_table'] === $referencedTable
+                            && $foreignKey['foreign_columns'] === ['id']
+                            && strtolower((string) $foreignKey['on_delete']) === 'restrict') {
+                            $found = true;
+
+                            break;
+                        }
+                    }
+
+                    if (! $found) {
+                        $missing[] = $table.' FOREIGN KEY('.$column.') REFERENCES '.$referencedTable.'(id)';
+                    }
+                }
+            }
+
             if ($missing !== []) {
                 $this->error('Incomplete Flowguard migrations: '.implode(', ', $missing));
 

@@ -89,3 +89,16 @@ For production schema changes, stop affected dispatchers, take and verify a
 consistent backup, rehearse the forward migration on a nonempty staging copy,
 and only deploy forward-compatible schema changes. A SQLite smoke test does
 **not** establish zero-downtime MySQL/PostgreSQL safety or backup restoration.
+
+## Foreign-key integrity on startup
+
+`flowguard:doctor` checks not just the tables and uniqueness constraints,
+but the foreign-key relationships for evidence → operation, resolution →
+operation/evidence, and inbox → outbox. All four must use restrictive delete
+behavior: ON DELETE CASCADE would silently erase audit or receipt records. A failed check indicates an
+incomplete migration or restore, and publishers should not be started until
+the database schema has been repaired from a reviewed migration or backup.
+
+This diagnostic inspects schema metadata without changing data. It does not
+validate that a tenant belongs to a user, that a provider webhook is
+valid, or that a backup is independently recoverable.
