@@ -94,7 +94,8 @@ and only deploy forward-compatible schema changes. A SQLite smoke test does
 
 `flowguard:doctor` checks not just the tables and uniqueness constraints,
 but the foreign-key relationships for evidence → operation, resolution →
-operation/evidence, and inbox → outbox. A failed check indicates an
+operation/evidence, and inbox → outbox. All four must use restrictive delete
+behavior: ON DELETE CASCADE would silently erase audit or receipt records. A failed check indicates an
 incomplete migration or restore, and publishers should not be started until
 the database schema has been repaired from a reviewed migration or backup.
 
