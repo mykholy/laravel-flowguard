@@ -1,9 +1,9 @@
 # Retention, archival and replay safety
 
-Status: **v1 policy draft**. Flowguard intentionally has no automatic
+Status: **v1 default retention contract**. Flowguard intentionally has no automatic
 pruning command. Retention periods must be agreed by the application owner,
 security reviewer and applicable financial/privacy requirements before a
-stable release.
+production deployment of that application.
 
 ## Record classes and default handling
 

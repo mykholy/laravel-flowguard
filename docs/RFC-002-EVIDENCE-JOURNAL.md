@@ -1,6 +1,6 @@
 # RFC-002, increment B: authorized append-only evidence journal
 
-**Experimental pre-alpha. This feature is not payment recovery or provider verification.**
+**Supported v1 primitive. This feature is not payment recovery or provider verification.**
 
 A provider Reconciler (introduced in PR #4) returns a read-only observation.
 The application can persist a reduced audit record after its own actor

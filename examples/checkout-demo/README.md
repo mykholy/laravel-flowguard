@@ -86,3 +86,28 @@ The `Stripe Sandbox Pilot` workflow runs this command when its repository test s
 Protocol references: [create an intent](https://docs.stripe.com/api/payment_intents/create), [confirm](https://docs.stripe.com/api/payment_intents/confirm), [idempotency](https://docs.stripe.com/api/idempotent_requests), [Stripe testing](https://docs.stripe.com/testing). The pilot still needs actual provider webhooks, gateway failure cases, process-kill injection, representative SQL staging, and human sign-off before the full provider gate can close.
 
 Partial real Stripe execution and the compatibility defect it exposed are recorded in [the sanitized evidence report](../../docs/evidence/stripe-sandbox-2026-10-14.md). Full provider acceptance remains open.
+
+
+### Actual Stripe webhook endpoint
+
+Setup installs `stripe/stripe-php:^22.0` in the **demo host only**. The Composer
+package itself has no Stripe dependency. Set `STRIPE_WEBHOOK_SECRET` privately
+from `stripe listen --events payment_intent.succeeded,payment_intent.payment_failed
+--events-from @self --forward-to http://127.0.0.1:8000/api/demo/stripe/webhook`.
+Use a test-only `STRIPE_API_KEY` environment variable for the CLI. Keep signing
+secrets and raw event bodies out of logs, screenshots and repository files.
+
+`POST /api/demo/stripe/webhook` uses the official SDK on the unmodified raw body,
+a five-minute timestamp tolerance and a 64 KiB limit. It accepts only test-mode
+payment events for the single configured sandbox account mapped to tenant 1.
+The encrypted intent reference, operation scope, order, amount and currency must
+all match persisted host records. Connected-account events are rejected.
+
+A verified event records one tenant-scoped inbox receipt and outbox observation.
+Repeated delivery returns `duplicate=true`; a changed signed payload reusing the
+event identity conflicts. The endpoint never confirms payment, changes the
+order to paid, appends reconciliation evidence or grants an approval. Continue
+using read-only provider lookup and the explicit host approval workflow.
+The generic synthetic `X-Demo-Signature` route remains a separate local fixture.
+
+See [actual signed-delivery evidence](../../docs/evidence/stripe-webhooks-2026-10-14.md).

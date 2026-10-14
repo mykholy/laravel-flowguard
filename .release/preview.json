@@ -1,4 +1,5 @@
 {
-  "tag": "v0.1.0-beta.3",
-  "notes": ".release/v0.1.0-beta.3.md"
+  "tag": "v1.0.0",
+  "notes": ".release/v1.0.0.md",
+  "channel": "stable"
 }

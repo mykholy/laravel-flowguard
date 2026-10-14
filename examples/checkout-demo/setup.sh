@@ -14,5 +14,5 @@ composer create-project "laravel/laravel:^$laravel_version" "$target_dir" --no-i
 cp -R "$source_dir/overlay/." "$target_dir/"
 cp -R "$source_dir/sandbox" "$target_dir/demo-sandbox"
 php "$source_dir/configure.php" "$target_dir"
-(cd "$target_dir" && composer config repositories.flowguard path "$repo_dir" && composer require 'mykholy/laravel-flowguard:@dev' --no-interaction --with-all-dependencies --no-progress && php artisan migrate --force && php artisan flowguard:doctor)
+(cd "$target_dir" && composer config repositories.flowguard path "$repo_dir" && composer require 'mykholy/laravel-flowguard:@dev' 'stripe/stripe-php:^22.0' --no-interaction --with-all-dependencies --no-progress && php artisan migrate --force && php artisan flowguard:doctor)
 echo "Demo created at $target_dir. Tokens are stored in its private .env file."

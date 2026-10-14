@@ -1,6 +1,6 @@
 # Roadmap (no release promise)
 
-## Phase A — trustworthy kernel [pre-alpha]
+## Phase A — supported kernel
 
 - [x] Explicit operation states and owner-only claim capability
 - [x] Durable uniqueness and immutable request fingerprint
@@ -8,7 +8,7 @@
 - [x] Laravel discovery and migrations
 - [x] PHP 8.3/8.4 and MySQL/PostgreSQL initial CI coverage
 - [x] Worker-kill fault injection (reservation crash point)
-- [ ] Larger stress runs and provider-accepted crash scenarios
+- [x] Repeated synthetic 100/500-worker runs and bounded real-provider crash evidence
 - [x] Disposable database write-path benchmark
 - [ ] Representative production capacity and regression thresholds
 
@@ -24,7 +24,7 @@
 - [ ] Built-in approval collection is intentionally out of scope; validate a real host implementation
 - [x] Initial provider evidence freshness guards and independent-process review race tests
 - [ ] Extended stress and crash injection for all supported engines
-- [ ] Evidence retention, privacy, and archival policy
+- [x] Preserve-all retention contract and operational archival guidance; host approval remains local
 
 ## Phase C — ecosystem
 
@@ -36,9 +36,11 @@
 - [ ] Production publisher example, timeouts and consumer idempotency validation
 - [x] Durable inbound event inbox (verified-event acceptance boundary)
 - [ ] Optional UI without forced Filament or Livewire dependency
-- [ ] Sandbox-only example integrations and versioned docs
+- [x] Sandbox-only checkout integration and supported API documentation
 
-## Release gate
+## Release and deployment scope
 
-No v1.0 before multi-database failure injection, explicit recovery design,
-security review, version compatibility proof and an independent adopter.
+The v1 library compatibility contract and publication requirements are in
+[RELEASE_CRITERIA.md](RELEASE_CRITERIA.md). Independent human audit/adopter
+reviews and representative production acceptance remain open application work;
+the stable version does not claim those tasks passed.

@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "provider": "stripe",
+  "mode": "sandbox",
+  "live_mode": false,
+  "transport": "Stripe CLI authenticated event stream with localhost forwarding",
+  "deliveries": [
+    [
+      {
+        "delivery": "provider_forward",
+        "status": 200,
+        "duplicate": false
+      },
+      {
+        "delivery": "duplicate_delivery",
+        "status": 200,
+        "duplicate": true
+      },
+      {
+        "delivery": "mutated_body",
+        "status": 403,
+        "duplicate": null
+      }
+    ]
+  ],
+  "receipt_delta": 1,
+  "outbox_delta": 1,
+  "raw_payload_retained": false,
+  "full_provider_pilot_complete": false,
+  "environment": {
+    "php": "8.3.6",
+    "laravel": "13.36.0",
+    "stripe_cli": "1.53.1",
+    "stripe_php": "v22.0.0",
+    "database": "sqlite",
+    "stripe_api_version": "2026-09-30.endive"
+  },
+  "source_sha256": {
+    "examples/checkout-demo/overlay/app/Demo/StripeWebhook.php": "9a1619e19ec5751ea65e0625442c9ee47c4b14c96b924e3087cc6133031230f5",
+    "examples/checkout-demo/overlay/routes/api.php": "ffd338a599a16673eaa46c5c4c96810feac56af23e8021820941c128e162de9a"
+  }
+}

@@ -1,6 +1,6 @@
 # RFC-002, increment C: authorized manual outcome classification
 
-**Experimental pre-alpha. NOT a payment recovery, replay, refund, charge or
+**Supported v1 bookkeeping primitive. NOT a payment recovery, replay, refund, charge or
 business-record repair API.**
 
 This feature closes the *Flowguard operation bookkeeping status* after an

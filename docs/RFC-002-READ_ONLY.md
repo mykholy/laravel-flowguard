@@ -1,6 +1,6 @@
 # RFC-002: Read-only provider reconciliation inspection
 
-**Status: partial implementation; no recovery/finalization authority.**
+**Status: supported v1 read-only contract; no recovery/finalization authority.**
 
 A timeout is not proof of failure; a provider may have committed the payment while
 our worker lost the response. `ReconciliationInspector` accepts a stored

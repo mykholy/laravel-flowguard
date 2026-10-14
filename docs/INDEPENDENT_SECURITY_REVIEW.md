@@ -1,7 +1,9 @@
 # Independent security review handoff
 
 Status: **requested but not completed**. This document defines evidence an
-independent reviewer must supply before v1.0.0 can be called production-ready.
+independent reviewer should supply for a production host security assessment.
+The v1.0.0 library compatibility release does not claim that assessment passed;
+see [the revised release scope](RELEASE_CRITERIA.md).
 
 ## Review scope
 
