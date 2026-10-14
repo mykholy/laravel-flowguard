@@ -2,7 +2,7 @@
 
 **Durable business-operation primitives for Laravel 12 and 13.**
 
-> **Release status: developer preview, no stable tag yet.** The implementation
+> **Release status: public beta (`v0.1.0-beta.1`), no stable tag yet.** The implementation
 > passes an automated Laravel 12/13, PHP 8.3/8.4/8.5, MySQL 8 and PostgreSQL 16
 > compatibility matrix. Passing CI does not establish real-provider safety.
 > Do not use Flowguard to capture live payments until the
@@ -33,15 +33,19 @@ Flowguard does not guarantee exactly-once effects across external systems.
 PHP 8.3+, Laravel 12/13, a transactional database and Composer 2.
 CI tests Laravel 12/13 on PHP 8.3/8.4/8.5, plus MySQL 8 and PostgreSQL 16.
 
-The package is not yet published to Packagist. For development environments,
-use Composer's GitHub VCS repository support:
+The package is published on [Packagist](https://packagist.org/packages/mykholy/laravel-flowguard).
+Use the pinned beta version in an isolated evaluation application:
 
 ```bash
-composer config repositories.flowguard vcs https://github.com/mykholy/laravel-flowguard.git
-composer require mykholy/laravel-flowguard:dev-main
+composer require mykholy/laravel-flowguard:0.1.0-beta.1
 php artisan migrate
 php artisan flowguard:doctor
 ```
+
+The beta is a prerelease. Public APIs and schemas may change before 1.0;
+review the [release notes](https://github.com/mykholy/laravel-flowguard/releases/tag/v0.1.0-beta.1)
+and [release criteria](docs/RELEASE_CRITERIA.md). While the tag is being indexed,
+`dev-main` remains available for development use.
 
 Do not use the development branch with real payments.
 
