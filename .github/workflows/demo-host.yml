@@ -1,0 +1,185 @@
+name: Demo Host Verification
+'on':
+  push:
+    branches:
+    - main
+  pull_request: null
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  demo-format:
+    name: Demo PHP formatting
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+        extensions: mbstring, dom, xml, curl, pdo_sqlite, sqlite3, pdo_mysql, pdo_pgsql, zip
+        coverage: none
+        tools: composer:v2
+    - run: composer install --no-interaction --no-progress
+    - name: Verify demo formatting and show reproducible patch
+      run: |-
+        vendor/bin/pint examples/checkout-demo
+        if ! git diff --quiet -- examples; then
+          echo DEMO_FORMAT_PATCH_START
+          git diff -- examples | base64 -w0
+          echo
+          echo DEMO_FORMAT_PATCH_END
+          exit 1
+        fi
+  demo-host:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root_flowguard_ci
+          MYSQL_DATABASE: flowguard_demo_ci
+          MYSQL_USER: flowguard
+          MYSQL_PASSWORD: flowguard
+        ports:
+        - 3306:3306
+        options: --health-cmd="mysqladmin ping -h 127.0.0.1 -uflowguard -pflowguard" --health-interval=10s --health-timeout=5s
+          --health-retries=12
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: flowguard_demo_ci
+          POSTGRES_USER: flowguard
+          POSTGRES_PASSWORD: flowguard
+        ports:
+        - 5432:5432
+        options: --health-cmd="pg_isready -U flowguard -d flowguard_demo_ci" --health-interval=10s --health-timeout=5s
+          --health-retries=12
+    env:
+      APP_ENV: testing
+      DEMO_LARAVEL: ${{ matrix.laravel }}
+      DB_CONNECTION: ${{ matrix.db }}
+      DB_DATABASE: ${{ matrix.db == 'sqlite' && '/tmp/flowguard-demo-test.sqlite' || 'flowguard_demo_ci' }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: ${{ matrix.db == 'mysql' && '3306' || '5432' }}
+      DB_USERNAME: flowguard
+      DB_PASSWORD: flowguard
+    name: "Demo Laravel ${{ matrix.laravel }} \xB7 ${{ matrix.db }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        laravel:
+        - '12'
+        - '13'
+        db:
+        - sqlite
+        - mysql
+        - pgsql
+    steps:
+    - uses: actions/checkout@v4
+    - uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+        extensions: mbstring, dom, xml, curl, pdo_sqlite, sqlite3, pdo_mysql, pdo_pgsql, zip
+        coverage: none
+        tools: composer:v2
+    - name: Create a fresh Laravel host with private demo credentials
+      run: |-
+        touch /tmp/flowguard-demo-test.sqlite
+        bash examples/checkout-demo/setup.sh "$RUNNER_TEMP/flowguard-demo-app"
+    - name: Exercise real HTTP timeouts, API policy, and independent worker exits
+      working-directory: ${{ runner.temp }}/flowguard-demo-app
+      run: php artisan test --compact --log-junit "$RUNNER_TEMP/demo-junit.xml"
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: demo-laravel-${{ matrix.laravel }}-${{ matrix.db }}
+        path: ${{ runner.temp }}/demo-junit.xml
+        retention-days: 30
+  demo-native-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root_flowguard_ci
+          MYSQL_DATABASE: flowguard_demo_ci
+          MYSQL_USER: flowguard
+          MYSQL_PASSWORD: flowguard
+        ports:
+        - 3306:3306
+        options: --health-cmd="mysqladmin ping -h 127.0.0.1 -uflowguard -pflowguard" --health-interval=10s --health-timeout=5s
+          --health-retries=12
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: flowguard_demo_ci
+          POSTGRES_USER: flowguard
+          POSTGRES_PASSWORD: flowguard
+        ports:
+        - 5432:5432
+        options: --health-cmd="pg_isready -U flowguard -d flowguard_demo_ci" --health-interval=10s --health-timeout=5s
+          --health-retries=12
+    env:
+      APP_ENV: testing
+      DEMO_LARAVEL: ${{ matrix.laravel }}
+      DB_CONNECTION: ${{ matrix.db }}
+      DB_DATABASE: ${{ matrix.db == 'sqlite' && '/tmp/flowguard-demo-test.sqlite' || 'flowguard_demo_ci' }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: ${{ matrix.db == 'mysql' && '3306' || '5432' }}
+      DB_USERNAME: flowguard
+      DB_PASSWORD: flowguard
+      DEMO_RESTORE_CONFIRM: disposable-only
+      DEMO_PROVIDER_URL: http://127.0.0.1:8099
+    name: "Demo full host native restore \xB7 ${{ matrix.db }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        laravel:
+        - '13'
+        db:
+        - mysql
+        - pgsql
+    steps:
+    - uses: actions/checkout@v4
+    - uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+        extensions: mbstring, dom, xml, curl, pdo_sqlite, sqlite3, pdo_mysql, pdo_pgsql, zip
+        coverage: none
+        tools: composer:v2
+    - name: Create a fresh disposable host
+      run: bash examples/checkout-demo/setup.sh "$RUNNER_TEMP/flowguard-demo-app"
+    - name: Prepare live host and independent provider state
+      working-directory: ${{ runner.temp }}/flowguard-demo-app
+      run: |-
+        php artisan demo:provider > "$RUNNER_TEMP/demo-provider.log" 2>&1 &
+        for attempt in $(seq 1 100); do
+          if (echo > /dev/tcp/127.0.0.1/8099) >/dev/null 2>&1; then break; fi
+          sleep 0.1
+        done
+        php artisan demo:restore-fixture prepare "$RUNNER_TEMP/demo-manifest.json"
+    - name: Native MySQL dump and restore of all host tables
+      if: matrix.db == 'mysql'
+      env:
+        MYSQL_PWD: flowguard
+      run: |-
+        docker exec ${{ job.services.mysql.id }} mysql -u root -proot_flowguard_ci -e "CREATE DATABASE flowguard_demo_restore_ci; GRANT ALL PRIVILEGES ON flowguard_demo_restore_ci.* TO 'flowguard'@'%';"
+        docker exec -e MYSQL_PWD=flowguard ${{ job.services.mysql.id }} mysqldump -u flowguard --single-transaction --no-tablespaces --skip-lock-tables flowguard_demo_ci > "$RUNNER_TEMP/demo.sql"
+        docker exec -i -e MYSQL_PWD=flowguard ${{ job.services.mysql.id }} mysql -u flowguard flowguard_demo_restore_ci < "$RUNNER_TEMP/demo.sql"
+    - name: Native PostgreSQL dump and restore of all host tables
+      if: matrix.db == 'pgsql'
+      run: |-
+        docker exec ${{ job.services.postgres.id }} psql -U flowguard -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE flowguard_demo_restore_ci"
+        docker exec ${{ job.services.postgres.id }} pg_dump -U flowguard -d flowguard_demo_ci --no-owner --no-privileges --format=plain > "$RUNNER_TEMP/demo.sql"
+        docker exec -i ${{ job.services.postgres.id }} psql -U flowguard -d flowguard_demo_restore_ci -v ON_ERROR_STOP=1 -f - < "$RUNNER_TEMP/demo.sql"
+    - name: Resume restored business state without recapture or stolen leases
+      working-directory: ${{ runner.temp }}/flowguard-demo-app
+      env:
+        DB_DATABASE: flowguard_demo_restore_ci
+      run: |-
+        php artisan flowguard:doctor
+        php artisan demo:restore-fixture verify "$RUNNER_TEMP/demo-manifest.json"

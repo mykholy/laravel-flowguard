@@ -11,3 +11,4 @@
 /AGENTS.md export-ignore
 /dist export-ignore
 /.release export-ignore
+/examples export-ignore

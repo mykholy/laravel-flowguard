@@ -220,3 +220,7 @@ rollback policies are described in [retention](docs/RETENTION.md) and the
 Clean-install CI installs the actual Composer distribution on every supported
 Laravel/database combination. See the [distribution and publication procedure](docs/PACKAGE_RELEASE.md)
 for archive verification, commit-linked artifacts and stable promotion steps.
+
+## Runnable checkout demo
+
+See [the Laravel checkout demo](examples/checkout-demo/README.md) for an isolated host application, signed webhooks, independent HTTP provider, crash/timeout tests, and native full-host restore drills.
