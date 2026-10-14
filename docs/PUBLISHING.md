@@ -31,10 +31,10 @@ A queue adapter, high-throughput dispatcher and automatic schedule are **not**
 bundled. Do not run it inside a business transaction, do not log raw
 exceptions, and do not treat a command retry as exactly-once delivery.
 
-The host application implements \`OutboxPublisher\`. Its \`publish(OutboxMessage $message)\`
+The host application implements `OutboxPublisher`. Its `publish(OutboxMessage $message)`
 method must only return after the destination durably acknowledges the event.
 
-\`\`\`php
+```php
 $dispatcher = new OutboxDispatcher(
     new DatabaseOutboxLeaseStore(DB::connection()),
     app(App\Messaging\OrderPublisher::class),
@@ -42,7 +42,7 @@ $dispatcher = new OutboxDispatcher(
 );
 
 $dispatcher->dispatchOne();
-\`\`\`
+```
 
 Invoke the dispatcher from a supervised worker with explicit timeouts. The
 publisher receives the message ID, tenant-aware scope, topic and subject
