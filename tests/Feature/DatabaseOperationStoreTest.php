@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mykholy\Flowguard\Tests\Feature;
 
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use LogicException;
 use Mykholy\Flowguard\Domain\Claim;
 use Mykholy\Flowguard\Domain\OperationStatus;
@@ -60,6 +61,74 @@ final class DatabaseOperationStoreTest extends TestCase
 
         $this->expectException(IdempotencyConflict::class);
         $guard->begin('orders.place', 'key-1', ['quantity' => 2]);
+    }
+
+    public function test_result_objects_cannot_trigger_serialization_or_be_persisted(): void
+    {
+        $guard = $this->app->make(Flowguard::class);
+        $operation = $guard->begin('payments.capture', 'unsafe-completion', ['amount_minor' => 100]);
+
+        $metadata = new class implements \JsonSerializable
+        {
+            public function jsonSerialize(): mixed
+            {
+                throw new \RuntimeException('Application serializer must never execute.');
+            }
+        };
+
+        try {
+            $guard->complete($operation->claim(), ['unsafe' => $metadata]);
+            self::fail('An object must not be accepted as result metadata.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('JSON-native', $exception->getMessage());
+        }
+
+        self::assertSame('processing', DB::table('flowguard_operations')->value('status'));
+        self::assertNull(DB::table('flowguard_operations')->value('result_json'));
+
+        $completed = $guard->complete($operation->claim(), ['safe_reference' => 'capture-100']);
+        self::assertSame(OperationStatus::Completed, $completed->status);
+    }
+
+    public function test_result_metadata_rejects_excessive_nesting_before_persistence(): void
+    {
+        $guard = $this->app->make(Flowguard::class);
+        $operation = $guard->begin('orders.place', 'deep-completion', ['quantity' => 1]);
+
+        $metadata = ['safe' => true];
+
+        for ($level = 0; $level < 33; $level++) {
+            $metadata = ['nested' => $metadata];
+        }
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('nesting');
+        $guard->complete($operation->claim(), $metadata);
+    }
+
+    public function test_shared_array_branches_cannot_exhaust_validation_before_size_checks(): void
+    {
+        $guard = $this->app->make(Flowguard::class);
+        $operation = $guard->begin('orders.place', 'shared-array-metadata', ['quantity' => 1]);
+
+        $levels = [['value' => true]];
+
+        for ($i = 1; $i <= 16; $i++) {
+            $previous = &$levels[$i - 1];
+            $levels[$i] = ['left' => &$previous, 'right' => &$previous];
+            unset($previous);
+        }
+
+        $metadata = ['root' => &$levels[16]];
+
+        try {
+            $guard->complete($operation->claim(), $metadata);
+            self::fail('Completion must reject a metadata graph exceeding the visit limit.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('too many JSON values', $exception->getMessage());
+        }
+
+        self::assertSame('processing', DB::table('flowguard_operations')->value('status'));
     }
 
     public function test_unowned_claim_cannot_complete(): void

@@ -25,7 +25,7 @@ unsafe if it alters retry, transaction or authorization semantics.
 
 The PHP method names, parameter names, parameter types and return types for
 core entry points, including the outbox recorder, evidence journal,
-reconciliation inspector, and manual resolver, are checked by
+reconciliation inspector and manual resolver, are checked by
 `PublicApiContractTest`. Consumer calls may
 use PHP named arguments, so renaming a parameter is a compatibility change.
 
@@ -33,6 +33,13 @@ use PHP named arguments, so renaming a parameter is a compatibility change.
 
 - Request payload fingerprints are produced from canonical JSON; map keys
   are ordered while list order is preserved.
+  Fingerprinting rejects cyclic or excessively nested input before it can
+  exhaust recursion: maximum 32 nested array levels, 32,768 visited values
+  and 64 KiB of canonical JSON.
+- Result metadata is limited to JSON-native scalars and arrays, at most
+  32 levels deep and 16 KiB encoded. Objects including `JsonSerializable`
+  are rejected before their serialization callbacks execute. Store bounded
+  provider references, not raw API responses or credentials.
 - Operation, inbox and outbox identities are tenant scoped, but Flowguard
   **does not authenticate tenants**. A host must derive and verify each scope.
 - Operation claims and outbox lease capabilities must not be serialized or

@@ -51,6 +51,29 @@ final class OperationIdentityTest extends TestCase
         OperationIdentity::from('payments', 'key', ['too_long' => str_repeat('x', 70000)]);
     }
 
+    public function test_cyclic_payload_fails_without_unbounded_recursion(): void
+    {
+        $payload = ['operation' => 'capture'];
+        $payload['cycle'] = &$payload;
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('nesting');
+        OperationIdentity::from('payments.capture', 'cyclic-key', $payload);
+    }
+
+    public function test_deeply_nested_payload_is_rejected_before_fingerprinting(): void
+    {
+        $payload = ['amount_minor' => 100];
+
+        for ($level = 0; $level < 33; $level++) {
+            $payload = ['nested' => $payload];
+        }
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('nesting');
+        OperationIdentity::from('payments.capture', 'deep-key', $payload);
+    }
+
     public function test_json_unsupported_values_are_rejected(): void
     {
         $this->expectException(InvalidArgumentException::class);
