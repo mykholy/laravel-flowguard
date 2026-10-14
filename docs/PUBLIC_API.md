@@ -24,7 +24,9 @@ unsafe if it alters retry, transaction or authorization semantics.
 | Operator visibility | `flowguard:doctor`, `flowguard:stale`, `flowguard:outbox` | Read only; never authorize replay from age alone |
 
 The PHP method names, parameter names, parameter types and return types for
-core entry points are checked by `PublicApiContractTest`. Consumer calls may
+core entry points, including the outbox recorder, evidence journal,
+reconciliation inspector and manual resolver, are checked by
+`PublicApiContractTest`. Consumer calls may
 use PHP named arguments, so renaming a parameter is a compatibility change.
 
 ## Semantics that must remain stable
