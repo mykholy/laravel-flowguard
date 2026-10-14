@@ -10,3 +10,4 @@
 /pint.json export-ignore
 /AGENTS.md export-ignore
 /dist export-ignore
+/.release export-ignore

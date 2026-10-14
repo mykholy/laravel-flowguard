@@ -41,3 +41,17 @@ publication. Review all matrix results for that same commit before promotion.
 No Packagist credentials belong in the repository, workflow output or artifacts.
 If a release fails validation, correct it in a new version; never move a
 published stable tag to a different commit.
+
+## Versioned public betas
+
+`.release/preview.json` and its matching notes select a 0.x beta version.
+The publication workflow validates the manifest on pull requests. After merge
+to main it waits for successful CI, clean-install, and native-restore workflows
+on the **same commit**, then builds and validates the Composer archive and
+publishes a GitHub prerelease with ZIP and checksum attachments. Existing tags
+are never overwritten. The workflow accepts only explicit 0.x beta tags and
+cannot publish a stable release.
+
+Packagist indexes the Git tag through its configured update hook. Confirm the
+indexed version and source SHA before reporting that Composer publication has
+completed. A successful GitHub release does not by itself prove indexing.

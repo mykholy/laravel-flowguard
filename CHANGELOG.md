@@ -1,10 +1,15 @@
 # Changelog
 
 This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-**No stable or prerelease GitHub tag has been published.** The entries below
-describe the current development branch and do not imply release guarantees.
+**No stable release has been published.** Versioned betas are evaluation
+releases and do not establish production readiness.
 
 ## Unreleased
+
+## v0.1.0-beta.1 — 2026-10-14
+
+First versioned public beta. The features below form the beta baseline;
+the independent review and real-provider gates remain open for v1.0.0.
 
 ### Added
 - Tenant-scoped durable operation claims with canonical payload fingerprints
