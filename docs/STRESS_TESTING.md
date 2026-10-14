@@ -61,8 +61,10 @@ This avoids reporting a nominal 500-worker run whose processes started their
 work at different times during PHP bootstrap.
 
 The stress workflow defaults to three repetitions. Changes to the harness run
-automatically on pull requests with ten workers on each engine; manual dispatch
-selects larger workloads. Explicit Bash pipefail propagates benchmark failures
+automatically on pull requests at 100 and 500 workers on each engine; manual
+dispatch selects a single workload. Disposable service connection ceilings are
+explicitly set to 620 so 500 simultaneous SQL connections can actually become
+ready. Production connection limits are never changed. Explicit Bash pipefail propagates benchmark failures
 through the output capture pipeline. It retains JSON results,
 `/usr/bin/time -v` process resource summaries, and database counter snapshots
 before/after the workload. Worker output includes reserve poll counts and peak
@@ -82,3 +84,15 @@ unique deliveries, N delivered rows and exactly N reservation attempts. Review
 p95/p99 and resource use against **host-specific** budgets declared before a
 representative staging run. These disposable runner artifacts alone do not close
 the production stress gate.
+
+## Large-workload acceptance for disposable CI
+
+Before execution the CI harness declares a 10,000 ms p99 budget, zero failed
+workers, N unique delivered rows and exactly N total lease attempts. It runs
+three repetitions for 100 and 500 simultaneous workers on each SQL engine and
+retains resource/counter artifacts for 90 days. A latency failure is reported
+as failure; the budget is not increased after observing a slow run.
+
+These thresholds validate this synthetic queue workload on its runner. They
+are not application SLAs, provider acceptance, continuous lock-wait tracing or
+a substitute for the representative staging workload required for stable 1.0.

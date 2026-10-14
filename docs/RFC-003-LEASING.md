@@ -53,3 +53,17 @@ are provided; scheduled workers and provider-specific transports are not.
 
 Re-check database behavior on MySQL and PostgreSQL with independent workers
 before relying on this in production. SQLite tests are development-only.
+
+## MySQL lock footprint
+
+MySQL first reads up to 32 oldest eligible candidate IDs without locks, then
+checks at most two shuffled candidates using primary-key `FOR UPDATE
+SKIP LOCKED` reads. If both collide, it returns null so the next poll uses a
+fresh transaction and candidate list. Eligibility is rechecked by the locking read inside the reservation
+transaction. This prevents InnoDB's sorted range scan from locking unrelated
+messages before LIMIT is applied. PostgreSQL retains its direct ordered
+SKIP LOCKED query. No host session isolation setting is changed.
+
+Selection within the MySQL window is best effort, not strict FIFO. If all
+candidates are locked or become ineligible, reserve returns null and workers
+must poll again; eligible work can exist beyond that bounded window.

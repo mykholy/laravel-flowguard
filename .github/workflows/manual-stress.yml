@@ -25,13 +25,14 @@ permissions:
 
 jobs:
   stress:
-    name: ${{ matrix.db }} · ${{ inputs.workers || '10' }} workers
+    name: ${{ matrix.db }} · ${{ matrix.workers }} workers
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
         db: [mysql, pgsql]
+        workers: ${{ fromJSON(github.event_name == 'pull_request' && '[100,500]' || format('[{0}]', inputs.workers)) }}
     services:
       mysql:
         image: mysql:8.0
@@ -62,8 +63,9 @@ jobs:
       FLOWGUARD_TEST_PORT: ${{ matrix.db == 'mysql' && '3306' || '5432' }}
       FLOWGUARD_TEST_USERNAME: flowguard
       FLOWGUARD_TEST_PASSWORD: flowguard
-      FLOWGUARD_STRESS_WORKERS: ${{ inputs.workers || '10' }}
+      FLOWGUARD_STRESS_WORKERS: ${{ matrix.workers }}
       FLOWGUARD_STRESS_LARGE_RUN: '1'
+      FLOWGUARD_STRESS_MAX_P99_MS: '10000'
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -72,6 +74,22 @@ jobs:
           extensions: mbstring, pdo_mysql, pdo_pgsql
           coverage: none
           tools: composer:v2
+      - name: Configure disposable database connection ceilings
+        shell: bash
+        env:
+          MYSQL_CONTAINER: ${{ job.services.mysql.id }}
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec "$MYSQL_CONTAINER" mysql -uroot -proot_flowguard_ci -e 'SET GLOBAL max_connections = 620;'
+          docker exec "$POSTGRES_CONTAINER" psql -U flowguard -d flowguard_ci -v ON_ERROR_STOP=1 -c "ALTER SYSTEM SET max_connections = '620'"
+          docker restart "$POSTGRES_CONTAINER"
+          for attempt in $(seq 1 30); do
+            if docker exec "$POSTGRES_CONTAINER" pg_isready -U flowguard -d flowguard_ci; then
+              break
+            fi
+            sleep 1
+          done
+          docker exec "$POSTGRES_CONTAINER" pg_isready -U flowguard -d flowguard_ci
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
       - name: Run repeated independent-worker contention benchmarks
@@ -90,10 +108,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: stress-${{ matrix.db }}-${{ inputs.workers || '10' }}-workers
+          name: stress-${{ matrix.db }}-${{ matrix.workers }}-workers
           path: stress-results/
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 90
       - name: Explain benchmark scope
         if: always()
         run: |

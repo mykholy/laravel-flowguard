@@ -86,7 +86,8 @@ final readonly class DatabaseOutboxLeaseStore implements OutboxDispatchPrecondit
             // Skip rows locked by other transactions on supported SQL engines.
             /** @var stdClass|null $row */
             $row = match ($driver) {
-                'mysql', 'pgsql' => $query->lock('FOR UPDATE SKIP LOCKED')->first(),
+                'mysql' => $this->mysqlCandidate($query),
+                'pgsql' => $query->lock('FOR UPDATE SKIP LOCKED')->first(),
                 'sqlite' => $query->lockForUpdate()->first(),
                 default => throw new InvalidArgumentException('Unsupported outbox database driver.'),
             };
@@ -119,6 +120,34 @@ final readonly class DatabaseOutboxLeaseStore implements OutboxDispatchPrecondit
                 token: $token,
             );
         }, 3);
+    }
+
+    private function mysqlCandidate(Builder $query): ?stdClass
+    {
+        // InnoDB locks scanned rows before filesort/LIMIT. Read a bounded
+        // candidate window without locks, then lock by unique primary key.
+        // A locking read rechecks eligibility against current committed state.
+        $ids = (clone $query)->limit(32)->pluck('id')->all();
+        if ($ids === []) {
+            return null;
+        }
+
+        // A small probe budget prevents a synchronized herd from walking
+        // the same stale list with dozens of SQL round trips per transaction.
+        shuffle($ids);
+        foreach (array_slice($ids, 0, 2) as $id) {
+            /** @var stdClass|null $row */
+            $row = (clone $query)->reorder()->where('id', (string) $id)
+                ->lock('FOR UPDATE SKIP LOCKED')->first();
+
+            if ($row !== null) {
+                return $row;
+            }
+        }
+
+        // A collision means poll again with a fresh transaction, never that
+        // the durable queue is empty.
+        return null;
     }
 
     public function acknowledge(OutboxLease $lease): void

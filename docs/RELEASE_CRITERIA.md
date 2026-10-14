@@ -39,7 +39,9 @@ guarantees exactly-once external side effects.
 - [ ] **Repeated, representative 100/500-worker stress tests** on MySQL and
       PostgreSQL, with measured lock waits, deadlocks, CPU/memory, error rates,
       p95/p99, database connection ceilings and declared acceptance thresholds.
-      The manual GitHub Actions harness exists but large runs remain unverified.
+      Three disposable CI runs per engine/workload now pass with explicit
+      correctness and latency thresholds (see [measured results](STABLE_READINESS.md)).
+      This synthetic workload does not establish representative host capacity.
 - [ ] **Full application backup/restore** on a nonempty MySQL/PostgreSQL
       staging copy, with foreign-key consistency and resumed-worker safety;
       isolated table restore fixtures do not close this requirement.
