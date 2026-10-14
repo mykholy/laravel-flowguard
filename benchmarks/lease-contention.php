@@ -23,6 +23,12 @@ if (function_exists('proc_open') === false) {
 }
 
 // bootstrap.php refuses non-disposable or non-opted-in database targets.
+$rawBudget = getenv('FLOWGUARD_STRESS_MAX_P99_MS');
+$latencyBudget = $rawBudget === false ? null : filter_var($rawBudget, FILTER_VALIDATE_INT);
+if ($latencyBudget !== null && (! is_int($latencyBudget) || $latencyBudget < 1 || $latencyBudget > 180000)) {
+    throw new InvalidArgumentException('Stress p99 budget must be 1..180000 milliseconds.');
+}
+
 $db = flowguardConcurrencyConnection();
 $table = 'fg_stress_'.bin2hex(random_bytes(6));
 $gate = sys_get_temp_dir().'/flowguard-stress-'.bin2hex(random_bytes(12));
@@ -174,6 +180,7 @@ try {
         'php_version' => PHP_VERSION,
         'elapsed_wall_ms' => round((hrtime(true) - $started) / 1_000_000, 3),
         'failures_by_class' => array_count_values($failures),
+        'p99_budget_ms' => $latencyBudget,
         'benchmark_only' => true,
     ];
 
@@ -182,6 +189,9 @@ try {
     if ($total !== $workersRequested || $unique !== $workersRequested
         || $delivered !== $workersRequested || $summary['attempts_total'] !== $workersRequested) {
         throw new RuntimeException('Outbox lease contention invariants failed.');
+    }
+    if ($latencyBudget !== null && ($summary['p99_ms'] === null || $summary['p99_ms'] > $latencyBudget)) {
+        throw new RuntimeException('Outbox lease contention exceeded the predefined p99 budget.');
     }
 } finally {
     @unlink($gate);
