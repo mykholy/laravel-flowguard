@@ -6,6 +6,18 @@ releases and do not establish production readiness.
 
 ## Unreleased
 
+### Fixed
+- MySQL outbox reservation now locks candidates by unique primary key instead
+  of locking unrelated records during an ordered range scan. Bounded collision
+  probes refresh the transaction before re-polling under heavy contention.
+- MySQL candidate selection is best effort within a bounded oldest-message
+  window; strict FIFO is not promised and null polls can occur during contention.
+
+### Verified
+- Three synchronized runs each at 100 and 500 workers on MySQL/PostgreSQL:
+  3,600 unique deliveries, no failed workers or extra attempts, with a
+  predefined 10-second p99 budget. See `docs/STABLE_READINESS.md`.
+
 ## v0.1.0-beta.1 — 2026-10-14
 
 First versioned public beta. The features below form the beta baseline;
