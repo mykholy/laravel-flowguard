@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Mykholy\Flowguard\Tests\Concurrency;
 
 use Illuminate\Database\Connection;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Events\Dispatcher;
 use Mykholy\Flowguard\Outbox\DatabaseOutboxLeaseStore;
 use Mykholy\Flowguard\Outbox\DatabaseOutboxRecorder;
 use Mykholy\Flowguard\Outbox\LeaseLost;
@@ -270,6 +272,48 @@ final class OutboxDatabaseTest extends TestCase
 
         self::assertSame('pending', $this->db->table($this->outbox)->where('id', $firstId)->value('status'));
         self::assertSame(1, $this->db->table($this->outbox)->where('status', 'delivered')->count());
+    }
+
+    public function test_mysql_reservation_does_not_lock_other_eligible_rows(): void
+    {
+        if ($this->db->getDriverName() !== 'mysql') {
+            self::markTestSkipped('Regression for InnoDB scan locking.');
+        }
+
+        $recorder = new DatabaseOutboxRecorder($this->db, $this->outbox);
+        $this->db->transaction(function () use ($recorder): void {
+            for ($i = 0; $i < 3; $i++) {
+                $recorder->record('tenant.42:orders', 'lock-footprint-'.$i, 'order.paid', 'order-'.$i);
+            }
+        });
+        $ids = $this->db->table($this->outbox)->orderBy('created_at')->orderBy('id')->pluck('id')->all();
+        $other = \flowguardConcurrencyConnection();
+        $observed = false;
+        $this->db->setEventDispatcher(new Dispatcher);
+        $this->db->listen(function (QueryExecuted $event) use ($ids, $other, &$observed): void {
+            if ($observed || ! str_contains(strtolower($event->sql), 'for update')) {
+                return;
+            }
+            $observed = true;
+            // Inspect while reserve() still holds its selected-row lock.
+            // The old sorted range query locked these other eligible rows too.
+            $candidates = array_values(array_filter($ids, static fn ($id): bool => ! in_array($id, $event->bindings, true)));
+            $unselected = $candidates[count($candidates) - 1];
+            $other->beginTransaction();
+            try {
+                self::assertNotNull($other->table($this->outbox)->where('id', $unselected)
+                    ->lock('FOR UPDATE NOWAIT')->first());
+            } finally {
+                $other->rollBack();
+            }
+        });
+        try {
+            $lease = (new DatabaseOutboxLeaseStore($this->db, $this->outbox))->reserve();
+            self::assertNotNull($lease);
+            self::assertTrue($observed);
+        } finally {
+            $this->db->unsetEventDispatcher();
+        }
     }
 
     public function test_killed_worker_leaves_recoverable_fenced_lease(): void

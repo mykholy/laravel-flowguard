@@ -86,7 +86,8 @@ final readonly class DatabaseOutboxLeaseStore implements OutboxDispatchPrecondit
             // Skip rows locked by other transactions on supported SQL engines.
             /** @var stdClass|null $row */
             $row = match ($driver) {
-                'mysql', 'pgsql' => $query->lock('FOR UPDATE SKIP LOCKED')->first(),
+                'mysql' => $this->mysqlCandidate($query),
+                'pgsql' => $query->lock('FOR UPDATE SKIP LOCKED')->first(),
                 'sqlite' => $query->lockForUpdate()->first(),
                 default => throw new InvalidArgumentException('Unsupported outbox database driver.'),
             };
@@ -119,6 +120,29 @@ final readonly class DatabaseOutboxLeaseStore implements OutboxDispatchPrecondit
                 token: $token,
             );
         }, 3);
+    }
+
+    private function mysqlCandidate(Builder $query): ?stdClass
+    {
+        // InnoDB locks scanned rows before filesort/LIMIT. Read a bounded
+        // candidate window without locks, then lock by unique primary key.
+        // A locking read rechecks eligibility against current committed state.
+        $ids = (clone $query)->limit(32)->pluck('id')->all();
+        shuffle($ids);
+
+        foreach ($ids as $id) {
+            /** @var stdClass|null $row */
+            $row = (clone $query)->reorder()->where('id', (string) $id)
+                ->lock('FOR UPDATE SKIP LOCKED')->first();
+
+            if ($row !== null) {
+                return $row;
+            }
+        }
+
+        // All candidates can be locked or no longer eligible. A null poll
+        // never proves the durable queue is empty; the next poll can retry.
+        return null;
     }
 
     public function acknowledge(OutboxLease $lease): void
