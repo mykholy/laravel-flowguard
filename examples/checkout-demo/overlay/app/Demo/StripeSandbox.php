@@ -11,6 +11,8 @@ use Throwable;
 /** Opt-in pilot transport; never selected by the interactive synthetic checkout. */
 final class StripeSandbox
 {
+    public const API_VERSION = '2026-09-30.endive';
+
     public function assertConfigured(): void
     {
         $key = config('demo.stripe_test_key');
@@ -23,7 +25,7 @@ final class StripeSandbox
     {
         $intent = $this->request('POST', '/payment_intents', [
             'amount' => 500, 'currency' => 'usd', 'capture_method' => 'automatic',
-            'payment_method_types' => ['card'], 'confirm' => 'false',
+            'allowed_payment_method_types' => ['card'], 'confirm' => 'false',
             'metadata' => ['flowguard_operation' => $operation, 'demo_order' => $order, 'demo_tenant' => '1'],
         ], 'flowguard:'.$operation.':prepare');
         $this->assertMatches($intent, $operation, $order);
@@ -58,6 +60,7 @@ final class StripeSandbox
         $this->assertConfigured();
         try {
             $request = Http::asForm()->withBasicAuth(config('demo.stripe_test_key'), '')
+                ->withHeaders(['Stripe-Version' => self::API_VERSION])
                 ->connectTimeout(10)->timeout(30)->withoutRedirecting();
             if ($key !== null) {
                 $request = $request->withHeaders(['Idempotency-Key' => $key]);

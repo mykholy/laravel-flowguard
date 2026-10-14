@@ -69,7 +69,7 @@ This is a local synthetic provider, not an actual payment provider sandbox or a 
 
 ## Optional Stripe Sandbox pilot
 
-The interactive checkout still uses the loopback simulator. The separate `demo:stripe-pilot` command calls only `https://api.stripe.com` using `STRIPE_TEST_SECRET_KEY` beginning with `sk_test_`, one fixed `pm_card_visa` test PaymentMethod, and a fixed USD 5.00 test amount. Live keys, live-mode responses, arbitrary payment methods, and redirects are rejected. It requires `APP_ENV=testing`, `DEMO_STRIPE_PILOT_CONFIRM=sandbox-only`, and a disposable database named `flowguard_demo_ci`, `flowguard_demo_restore_ci`, `flowguard-demo-test.sqlite`, or `flowguard-stripe-pilot.sqlite`.
+The interactive checkout still uses the loopback simulator. The Stripe transport pins API `2026-09-30.endive` and uses `allowed_payment_method_types=[card]`; it does not depend on the account default API version. The separate `demo:stripe-pilot` command calls only `https://api.stripe.com` using `STRIPE_TEST_SECRET_KEY` beginning with `sk_test_`, one fixed `pm_card_visa` test PaymentMethod, and a fixed USD 5.00 test amount. Live keys, live-mode responses, arbitrary payment methods, and redirects are rejected. It requires `APP_ENV=testing`, `DEMO_STRIPE_PILOT_CONFIRM=sandbox-only`, and a disposable database named `flowguard_demo_ci`, `flowguard_demo_restore_ci`, `flowguard-demo-test.sqlite`, or `flowguard-stripe-pilot.sqlite`.
 
 Set those variables privately before running setup with a new disposable target. Then:
 
@@ -84,3 +84,5 @@ If a transport fault occurs after the reference was persisted, the report includ
 The `Stripe Sandbox Pilot` workflow runs this command when its repository test secret is available. Without that secret it records **blocked**, never a successful provider result. Offline `StripePilotContractTest` tests verify transport contracts and rejection paths; they do not contact Stripe and do not close the real-provider acceptance gate. The workflow's green infrastructure status alone is not provider acceptance: inspect `report.json` and its exact source SHA.
 
 Protocol references: [create an intent](https://docs.stripe.com/api/payment_intents/create), [confirm](https://docs.stripe.com/api/payment_intents/confirm), [idempotency](https://docs.stripe.com/api/idempotent_requests), [Stripe testing](https://docs.stripe.com/testing). The pilot still needs actual provider webhooks, gateway failure cases, process-kill injection, representative SQL staging, and human sign-off before the full provider gate can close.
+
+Partial real Stripe execution and the compatibility defect it exposed are recorded in [the sanitized evidence report](../../docs/evidence/stripe-sandbox-2026-10-14.md). Full provider acceptance remains open.

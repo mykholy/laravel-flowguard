@@ -1,7 +1,9 @@
 # External provider staging pilot
 
-Status: **not yet performed**. The local HTTP receiver in
-HTTP_PROVIDER_FIXTURE.md is a protocol simulation, not a gateway pilot.
+Status: **partial real Stripe sandbox execution verified; full acceptance remains open**.
+See the [2026-10-14 sanitized evidence](evidence/stripe-sandbox-2026-10-14.md)
+for two real HTTPS test payments and read-only recovery. The local HTTP receiver
+in HTTP_PROVIDER_FIXTURE.md remains a protocol simulation.
 
 Use only an isolated external provider **sandbox** account and a test Laravel
 application. Do not run this procedure against live merchants, payouts,

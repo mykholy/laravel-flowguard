@@ -43,9 +43,11 @@ final class StripePilotContractTest extends TestCase
         Http::preventStrayRequests();
         Http::fake(function (Request $request) use ($loseResponse, $wrongTenant) {
             self::assertStringStartsWith('https://api.stripe.com/v1/payment_intents', $request->url());
+            self::assertSame(['2026-09-30.endive'], $request->header('Stripe-Version'));
             if ($request->method() === 'POST' && str_ends_with($request->url(), '/payment_intents')) {
                 self::assertSame('false', $request['confirm']);
-                self::assertSame(['card'], $request['payment_method_types']);
+                self::assertSame(['card'], $request['allowed_payment_method_types']);
+                self::assertArrayNotHasKey('payment_method_types', $request->data());
                 self::assertSame(500, (int) $request['amount']);
                 $this->intent = ['id' => 'pi_OFFLINECONTRACT', 'object' => 'payment_intent', 'livemode' => false,
                     'status' => 'requires_payment_method', 'amount' => 500, 'currency' => 'usd',

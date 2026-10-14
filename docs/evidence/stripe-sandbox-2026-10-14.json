@@ -1,0 +1,108 @@
+{
+  "status": "partial_external_pilot_passed",
+  "executed_at_utc": "2026-10-14T16:13:48.176716+00:00",
+  "environment": {
+    "php": "8.3.6",
+    "laravel": "13.36.0",
+    "database": "sqlite",
+    "core_package": "v0.1.0-beta.2",
+    "core_source": "454adc11e0570cb0af79d01d36faca6022bfa92b",
+    "stripe_api_version": "2026-09-30.endive"
+  },
+  "demo_source_sha256": {
+    "StripeSandbox.php": "95288f929a6527c5f8a136c94248b6d924ab51b604fcfece2f52cfeacd9f68da",
+    "DemoStripePilot.php": "05c9d1d72a5e99b6d4b337c55efb99b9d34836786b7684d4e70a61271aa37989"
+  },
+  "initial_defect": {
+    "http_status": 400,
+    "stage": "unconfirmed_intent_creation",
+    "removed_parameter": "payment_method_types",
+    "local_state_preserved": "requires_reconciliation",
+    "capture_confirmation_attempts": 0
+  },
+  "baseline": {
+    "provider": "stripe",
+    "mode": "sandbox",
+    "status": "passed",
+    "external_provider_verified": true,
+    "fault": "application_acknowledgement_discarded",
+    "full_provider_pilot_complete": false,
+    "live_mode": false,
+    "duplicate_claim_rejected": true,
+    "read_only_recovery": true,
+    "charge_identity_unchanged": true,
+    "independent_principals_approved": true
+  },
+  "recovery": {
+    "status": "passed",
+    "interrupted_state": "requires_reconciliation",
+    "resumed_state": "reconciled_success",
+    "fault": "local_read_interrupted_after_real_confirmation",
+    "provider_write_during_resume": false,
+    "request_middleware_attempts": {
+      "interrupt_first_read": {
+        "create": 1,
+        "confirm": 1,
+        "read": 1
+      },
+      "resume": {
+        "create": 0,
+        "confirm": 0,
+        "read": 2
+      }
+    }
+  },
+  "provider_ledger": {
+    "executed_at_utc": "2026-10-14T16:13:48.176716+00:00",
+    "provider": "stripe",
+    "transport": "real_https",
+    "rows": [
+      {
+        "scenario": 1,
+        "charge_count": 1,
+        "amount_minor": 500,
+        "currency": "usd",
+        "paid": true,
+        "captured": true,
+        "livemode": false,
+        "intent_hash": "3df8e07cedaab1ba3da5986e91e161315311419027af1859416e07d864dc7f5f",
+        "stripe_api_version": "2026-09-30.endive"
+      },
+      {
+        "scenario": 2,
+        "charge_count": 1,
+        "amount_minor": 500,
+        "currency": "usd",
+        "paid": true,
+        "captured": true,
+        "livemode": false,
+        "intent_hash": "26c000eeffc7fc01a74d882c6bdf61434f61e2b6697f40c85662d0d7c13bac0e",
+        "stripe_api_version": "2026-09-30.endive"
+      }
+    ],
+    "total_test_charges": 2,
+    "live_charges": 0
+  },
+  "host_rows": {
+    "orders": 3,
+    "payments": 3,
+    "reconciled_success": 2,
+    "rejected_create_left_unknown": 1,
+    "evidence_entries": 2,
+    "resolution_decisions": 2,
+    "approvals": 2
+  },
+  "local_regression": {
+    "tests": 20,
+    "assertions": 228,
+    "result": "passed"
+  },
+  "full_provider_pilot_complete": false,
+  "not_exercised": [
+    "provider_webhook_delivery",
+    "real_network_timeout",
+    "real_process_kill_after_stripe_acceptance",
+    "representative_mysql_postgresql_provider_staging",
+    "independent_human_security_review"
+  ]
+}
