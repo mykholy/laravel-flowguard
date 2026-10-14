@@ -57,8 +57,9 @@ before relying on this in production. SQLite tests are development-only.
 ## MySQL lock footprint
 
 MySQL first reads up to 32 oldest eligible candidate IDs without locks, then
-checks candidates in shuffled order using primary-key `FOR UPDATE SKIP LOCKED`
-reads. Eligibility is rechecked by the locking read inside the reservation
+checks at most two shuffled candidates using primary-key `FOR UPDATE
+SKIP LOCKED` reads. If both collide, it returns null so the next poll uses a
+fresh transaction and candidate list. Eligibility is rechecked by the locking read inside the reservation
 transaction. This prevents InnoDB's sorted range scan from locking unrelated
 messages before LIMIT is applied. PostgreSQL retains its direct ordered
 SKIP LOCKED query. No host session isolation setting is changed.

@@ -128,9 +128,14 @@ final readonly class DatabaseOutboxLeaseStore implements OutboxDispatchPrecondit
         // candidate window without locks, then lock by unique primary key.
         // A locking read rechecks eligibility against current committed state.
         $ids = (clone $query)->limit(32)->pluck('id')->all();
-        shuffle($ids);
+        if ($ids === []) {
+            return null;
+        }
 
-        foreach ($ids as $id) {
+        // A small probe budget prevents a synchronized herd from walking
+        // the same stale list with dozens of SQL round trips per transaction.
+        shuffle($ids);
+        foreach (array_slice($ids, 0, 2) as $id) {
             /** @var stdClass|null $row */
             $row = (clone $query)->reorder()->where('id', (string) $id)
                 ->lock('FOR UPDATE SKIP LOCKED')->first();
@@ -140,8 +145,8 @@ final readonly class DatabaseOutboxLeaseStore implements OutboxDispatchPrecondit
             }
         }
 
-        // All candidates can be locked or no longer eligible. A null poll
-        // never proves the durable queue is empty; the next poll can retry.
+        // A collision means poll again with a fresh transaction, never that
+        // the durable queue is empty.
         return null;
     }
 
