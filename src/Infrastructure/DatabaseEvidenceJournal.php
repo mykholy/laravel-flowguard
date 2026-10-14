@@ -78,7 +78,7 @@ final readonly class DatabaseEvidenceJournal implements EvidenceJournal
                 'evidence_code' => $evidence->evidenceCode,
                 'observed_at' => $observedAt->format('Y-m-d H:i:s.u'),
                 // Never persist provider response, request, headers or raw reference.
-                'provider_reference_present' => $evidence->providerReference !== null,
+                'provider_reference_present' => $evidence->providerReferencePresent,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
