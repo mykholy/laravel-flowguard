@@ -210,3 +210,9 @@ unit tests. No stable tag has been published. Operational retention and schema
 rollback policies are described in [retention](docs/RETENTION.md) and the
 [operations runbook](docs/OPERATIONS.md).
 
+
+## Release artifacts
+
+Clean-install CI installs the actual Composer distribution on every supported
+Laravel/database combination. See the [distribution and publication procedure](docs/PACKAGE_RELEASE.md)
+for archive verification, commit-linked artifacts and stable promotion steps.

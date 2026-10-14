@@ -16,6 +16,19 @@ try {
         throw new InvalidArgumentException('Missing validated stress-test inputs.');
     }
 
+    $slot = getenv('FG_STRESS_SLOT');
+    if (is_string($slot) === false || preg_match('/^[0-9]{1,3}$/D', $slot) !== 1) {
+        throw new InvalidArgumentException('Missing worker slot.');
+    }
+
+    // Bootstrap and connect before signalling readiness to the parent.
+    $connection = flowguardConcurrencyConnection();
+    $connection->getPdo();
+    $store = new DatabaseOutboxLeaseStore($connection, $table);
+    if (file_put_contents($gate.'.ready.'.$slot, 'ready') === false) {
+        throw new RuntimeException('Could not signal worker readiness.');
+    }
+
     $deadline = microtime(true) + 180;
     while (file_exists($gate) === false) {
         if (microtime(true) >= $deadline) {
@@ -26,13 +39,14 @@ try {
     }
 
     $started = hrtime(true);
-    $store = new DatabaseOutboxLeaseStore(flowguardConcurrencyConnection(), $table);
     // SKIP LOCKED can return no row while peers briefly hold all candidates.
     // This is a poll, not an assertion that the durable queue is empty.
     $reserveDeadline = microtime(true) + 10;
     $lease = null;
+    $polls = 0;
 
     do {
+        $polls++;
         $lease = $store->reserve(60);
 
         if ($lease !== null) {
@@ -50,6 +64,8 @@ try {
 
     echo json_encode([
         'id' => $lease->id,
+        'reserve_polls' => $polls,
+        'peak_memory_bytes' => memory_get_peak_usage(true),
         'elapsed_ms' => round((hrtime(true) - $started) / 1_000_000, 3),
     ], JSON_THROW_ON_ERROR)."\n";
 } catch (Throwable $exception) {
