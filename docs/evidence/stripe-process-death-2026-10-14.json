@@ -1,0 +1,15 @@
+{
+    "status": "passed",
+    "mode": "sandbox",
+    "live_mode": false,
+    "termination_signal": 9,
+    "boundary": "after_durable_unknown_before_first_observation",
+    "recovery_post_requests": 0,
+    "recovery_get_requests": 2,
+    "matching_provider_charges": 1,
+    "amount_minor": 500,
+    "currency": "usd",
+    "final_operation_state": "reconciled_success",
+    "final_payment_state": "paid",
+    "full_provider_pilot_complete": false
+}
