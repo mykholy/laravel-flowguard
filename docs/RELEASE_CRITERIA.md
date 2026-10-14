@@ -1,6 +1,6 @@
 # v1.0.0 release criteria
 
-**Current status: developer preview. No stable release has been authorized.**
+**Current status: public beta. Stable acceptance gates remain open.**
 Passing automated tests is necessary but not sufficient for a library that
 coordinates business effects across independent systems. Flowguard never
 guarantees exactly-once external side effects.
@@ -25,6 +25,11 @@ guarantees exactly-once external side effects.
       selected outbox and reconciliation records.
 - [x] Populated schema upgrade rehearsal and destructive rollback protection.
 - [x] A draft public API contract, runbook, threat model and retention policy.
+- [x] Runnable multi-tenant checkout host with real local HTTP timeout and
+      independent worker-exit tests; full nonempty demo-host SQL restoration.
+- [x] Opt-in Stripe sandbox transport and GET-only recovery tooling, with
+      offline rejection/contract tests. Missing credentials are reported blocked;
+      this does not establish external-provider acceptance.
 
 ## Mandatory blockers before v1.0.0
 

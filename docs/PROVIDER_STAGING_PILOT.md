@@ -8,6 +8,16 @@ application. Do not run this procedure against live merchants, payouts,
 customer identities or cards. Host credentials must remain in a private
 secret store and must never be committed or put in run artifacts.
 
+## Executable starting point
+
+The [checkout demo](../examples/checkout-demo/README.md#optional-stripe-sandbox-pilot)
+includes a test-key-only Stripe command and a secret-aware GitHub workflow.
+It can create one fixed test payment, discard an application acknowledgement,
+and reconcile with GET-only observations and durable host approvals. Its
+provider reference is encrypted in host storage. This is partial pilot tooling,
+not completion of this protocol. A missing secret is explicitly reported as
+blocked; offline contract tests never count as external acceptance.
+
 ## Preparation
 
 - Pin the Flowguard commit SHA and record PHP, Laravel, MySQL/PostgreSQL,
