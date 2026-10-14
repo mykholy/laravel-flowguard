@@ -6,6 +6,18 @@ releases and do not establish production readiness.
 
 ## Unreleased
 
+## v0.1.0-beta.2 — 2026-10-14
+
+### Added
+- Runnable isolated Laravel checkout host with tenant-bound APIs, synthetic
+  payments, signed webhooks, durable approvals, independent HTTP timeouts and
+  process-exit tests across Laravel 12/13 and three database engines.
+- Full-host native MySQL/PostgreSQL backup/restore drills preserving domain
+  rows, encrypted provider references, audit relationships and safe recovery.
+- Optional test-key-only Stripe sandbox pilot with encrypted intent storage,
+  one confirmation, controlled application acknowledgement loss, GET-only
+  resume and sanitized evidence. Offline contracts are not external acceptance.
+
 ### Fixed
 - MySQL outbox reservation now locks candidates by unique primary key instead
   of locking unrelated records during an ordered range scan. Bounded collision

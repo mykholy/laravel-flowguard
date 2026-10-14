@@ -27,7 +27,7 @@ publication. Review all matrix results for that same commit before promotion.
    commit; simulated providers do not qualify as external adoption.
 2. Finalize the supported API and changelog, keeping host responsibilities and
    at-least-once delivery semantics explicit.
-3. Verify all quality, clean-install and native-restore workflows for the exact
+3. Verify all quality, clean-install demo-host, and native-restore workflows for the exact
    release commit. Inspect the Composer archive and checksum artifact.
 4. Create the immutable `v1.0.0` tag at that reviewed commit and a GitHub release
    describing compatibility, migrations, host integration and known limits.
@@ -46,7 +46,7 @@ published stable tag to a different commit.
 
 `.release/preview.json` and its matching notes select a 0.x beta version.
 The publication workflow validates the manifest on pull requests. After merge
-to main it waits for successful CI, clean-install, and native-restore workflows
+to main it waits for successful CI, clean-install, demo-host, and native-restore workflows
 on the **same commit**, then builds and validates the Composer archive and
 publishes a GitHub prerelease with ZIP and checksum attachments. Existing tags
 are never overwritten. The workflow accepts only explicit 0.x beta tags and

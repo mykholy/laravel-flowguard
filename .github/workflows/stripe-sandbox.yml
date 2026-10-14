@@ -1,0 +1,73 @@
+name: Stripe Sandbox Pilot
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/stripe-sandbox.yml
+      - examples/checkout-demo/overlay/app/Demo/StripeSandbox.php
+      - examples/checkout-demo/overlay/app/Console/Commands/DemoStripePilot.php
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flowguard-stripe-sandbox
+  cancel-in-progress: false
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /tmp/flowguard-stripe-pilot.sqlite
+      DEMO_STRIPE_PILOT_CONFIRM: sandbox-only
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check test credentials without disclosing them
+        id: credentials
+        env:
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/stripe-evidence"
+          if [[ "$STRIPE_TEST_SECRET_KEY" == sk_test_* ]]; then
+            echo 'configured=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'configured=false' >> "$GITHUB_OUTPUT"
+            echo '{"status":"blocked","reason":"stripe_test_credentials_required","external_provider_verified":false,"full_provider_pilot_complete":false}' > "$RUNNER_TEMP/stripe-evidence/report.json"
+            echo 'BLOCKED: STRIPE_TEST_SECRET_KEY is absent or is not a test secret. No provider traffic occurred; this is not a passing acceptance result.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: shivammathur/setup-php@v2
+        if: steps.credentials.outputs.configured == 'true'
+        with:
+          php-version: '8.3'
+          extensions: zip, mbstring, dom, xml, curl, pdo_sqlite, sqlite3
+          coverage: none
+          tools: composer:v2
+      - name: Create disposable pilot host
+        if: steps.credentials.outputs.configured == 'true'
+        run: |
+          touch "$DB_DATABASE"
+          bash examples/checkout-demo/setup.sh "$RUNNER_TEMP/stripe-pilot-app"
+      - name: Run one fixed test payment and read-only reconciliation
+        if: steps.credentials.outputs.configured == 'true'
+        working-directory: ${{ runner.temp }}/stripe-pilot-app
+        env:
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+        run: php artisan demo:stripe-pilot --report="$RUNNER_TEMP/stripe-evidence/report.json"
+      - name: Record source and sanitized evidence
+        if: always()
+        run: |
+          printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/stripe-evidence/source-sha.txt"
+          if [ -f "$RUNNER_TEMP/stripe-evidence/report.json" ]; then
+            cat "$RUNNER_TEMP/stripe-evidence/report.json" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stripe-sandbox-evidence
+          path: ${{ runner.temp }}/stripe-evidence/
+          retention-days: 30

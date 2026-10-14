@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 return [
+    'stripe_test_key' => env('STRIPE_TEST_SECRET_KEY', ''),
+    'stripe_pilot_confirm' => env('DEMO_STRIPE_PILOT_CONFIRM', ''),
     'provider_url' => env('DEMO_PROVIDER_URL', 'http://127.0.0.1:8099'),
     'provider_key' => env('DEMO_PROVIDER_KEY', ''),
     'webhook_secret' => env('DEMO_WEBHOOK_SECRET', ''),

@@ -8,6 +8,7 @@ use App\Console\Commands\DemoCrashDispatch;
 use App\Console\Commands\DemoCrashOperation;
 use App\Console\Commands\DemoRestoreFixture;
 use App\Console\Commands\DemoServeProvider;
+use App\Console\Commands\DemoStripePilot;
 use App\Demo\OrderPublisher;
 use Illuminate\Support\ServiceProvider;
 use Mykholy\Flowguard\Contracts\OutboxPublisher;
@@ -26,7 +27,7 @@ class AppServiceProvider extends ServiceProvider
             throw new RuntimeException('The demo host must run only in local or testing environments.');
         }
         if ($this->app->runningInConsole()) {
-            $this->commands([DemoCrashDispatch::class, DemoCrashOperation::class, DemoRestoreFixture::class, DemoServeProvider::class]);
+            $this->commands([DemoCrashDispatch::class, DemoCrashOperation::class, DemoRestoreFixture::class, DemoServeProvider::class, DemoStripePilot::class]);
         }
     }
 }

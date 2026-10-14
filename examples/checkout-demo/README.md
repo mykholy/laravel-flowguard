@@ -66,3 +66,21 @@ The destructive restore command additionally requires `APP_ENV=testing`, `DEMO_R
 ## Evidence boundary
 
 This is a local synthetic provider, not an actual payment provider sandbox or a production deployment. It makes timeout/crash/restore behavior reproducible, but cannot supply independent security review, real-provider acceptance, representative customer staging, or operator/API sign-off. Release gates remain in [STABLE_READINESS](../../docs/STABLE_READINESS.md). The demo follows the current source checkout; the published beta tag is immutable and may contain older code.
+
+## Optional Stripe Sandbox pilot
+
+The interactive checkout still uses the loopback simulator. The separate `demo:stripe-pilot` command calls only `https://api.stripe.com` using `STRIPE_TEST_SECRET_KEY` beginning with `sk_test_`, one fixed `pm_card_visa` test PaymentMethod, and a fixed USD 5.00 test amount. Live keys, live-mode responses, arbitrary payment methods, and redirects are rejected. It requires `APP_ENV=testing`, `DEMO_STRIPE_PILOT_CONFIRM=sandbox-only`, and a disposable database named `flowguard_demo_ci`, `flowguard_demo_restore_ci`, `flowguard-demo-test.sqlite`, or `flowguard-stripe-pilot.sqlite`.
+
+Set those variables privately before running setup with a new disposable target. Then:
+
+```bash
+php artisan demo:stripe-pilot --report=/tmp/stripe-pilot-report.json
+```
+
+The command creates an **unconfirmed** intent with a stable idempotency key, persists its encrypted reference before confirmation, confirms once, deliberately discards the application acknowledgement, records an unknown local outcome, then performs GET-only observation and two-principal bookkeeping resolution. This controlled application fault is not a claim of an actual Stripe network timeout or process kill. Duplicate local requests do not confirm again. The sanitized report checks that the observed charge identity remains unchanged; it is not an independent audit of every Stripe account effect.
+
+If a transport fault occurs after the reference was persisted, the report includes a non-sensitive local operation ID. Recover with `php artisan demo:stripe-pilot --resume=<operation-id> --report=/tmp/stripe-resume.json`; this path issues GET requests only. If creation fails before the reference can be persisted, the claim stays unknown and the pilot refuses to guess or automatically create/confirm again. Preserve the private database and `APP_KEY` for investigation; never upload them.
+
+The `Stripe Sandbox Pilot` workflow runs this command when its repository test secret is available. Without that secret it records **blocked**, never a successful provider result. Offline `StripePilotContractTest` tests verify transport contracts and rejection paths; they do not contact Stripe and do not close the real-provider acceptance gate. The workflow's green infrastructure status alone is not provider acceptance: inspect `report.json` and its exact source SHA.
+
+Protocol references: [create an intent](https://docs.stripe.com/api/payment_intents/create), [confirm](https://docs.stripe.com/api/payment_intents/confirm), [idempotency](https://docs.stripe.com/api/idempotent_requests), [Stripe testing](https://docs.stripe.com/testing). The pilot still needs actual provider webhooks, gateway failure cases, process-kill injection, representative SQL staging, and human sign-off before the full provider gate can close.
