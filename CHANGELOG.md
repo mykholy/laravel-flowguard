@@ -1,6 +1,20 @@
 # Changelog
 
 This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+## v1.0.1 — 2026-10-14
+
+- Correct the repository-only Stripe webhook demo to exclude the mutable
+  `pending_webhooks` delivery counter from its deduplication fingerprint after
+  signature verification. Retries with unchanged event data remain duplicates;
+  changed payment data still conflicts.
+- Add a regression that reproduced HTTP 409 before the fix and requires one
+  receipt/outbox signal after the counter changes. Core runtime, API, migrations
+  and dependencies are unchanged.
+- Existing disposable demo hosts with v1.0.0 Stripe receipts should retain their
+  version for those receipts or create a fresh disposable host; the demo does not
+  migrate or rewrite historical fingerprints. This does not affect core-package
+  consumers or add a production provider adapter.
+
 ## v1.0.0 — 2026-10-14
 
 First stable **library contract** release. The documented PHP signatures, named

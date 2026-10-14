@@ -117,6 +117,17 @@ final class StripeWebhookTest extends TestCase
         self::assertSame(1, DB::table('flowguard_inbox')->count());
     }
 
+    public function test_delivery_counter_changes_do_not_turn_a_provider_retry_into_a_conflict(): void
+    {
+        $event = $this->event;
+        $event['pending_webhooks'] = 2;
+        $first = $this->deliver($event)->assertOk()->json('id');
+        $event['pending_webhooks'] = 1;
+        $this->deliver($event)->assertOk()->assertJson(['id' => $first, 'duplicate' => true]);
+        self::assertSame(1, DB::table('flowguard_inbox')->count());
+        self::assertSame(1, DB::table('flowguard_outbox')->where('scope', 'tenant.1:stripe')->count());
+    }
+
     public function test_multiple_v1_signatures_are_supported_and_missing_secret_fails_closed(): void
     {
         $body = json_encode($this->event, JSON_THROW_ON_ERROR);

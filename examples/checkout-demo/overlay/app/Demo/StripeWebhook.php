@@ -63,6 +63,9 @@ final class StripeWebhook
             abort(409);
         }
         abort_unless(hash_equals($reference, $intent['id']), 409);
+        // Delivery bookkeeping can change while the immutable event data stays the same.
+        // Authenticate the full raw body above, but exclude this counter from identity.
+        unset($event['pending_webhooks']);
         try {
             $receipt = (new DatabaseInboxRecorder(DB::connection()))->receive(
                 'tenant.1:stripe', $event['id'], $event, 'stripe.'.$type, $operation->id);

@@ -104,8 +104,12 @@ The encrypted intent reference, operation scope, order, amount and currency must
 all match persisted host records. Connected-account events are rejected.
 
 A verified event records one tenant-scoped inbox receipt and outbox observation.
-Repeated delivery returns `duplicate=true`; a changed signed payload reusing the
-event identity conflicts. The endpoint never confirms payment, changes the
+Repeated delivery returns `duplicate=true`; a changed signed event-data payload
+reusing the event identity conflicts. The mutable `pending_webhooks` envelope
+counter is excluded from the fingerprint **after** raw-body signature verification.
+Existing disposable hosts with v1.0.0 Stripe receipts should retain that host
+version for historical redelivery or start a fresh disposable host. Historical
+fingerprints are never rewritten or deleted automatically. The endpoint never confirms payment, changes the
 order to paid, appends reconciliation evidence or grants an approval. Continue
 using read-only provider lookup and the explicit host approval workflow.
 The generic synthetic `X-Demo-Signature` route remains a separate local fixture.
