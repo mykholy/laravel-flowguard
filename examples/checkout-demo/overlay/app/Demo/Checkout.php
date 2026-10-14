@@ -7,6 +7,7 @@ namespace App\Demo;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Mykholy\Flowguard\Domain\OperationSnapshot;
 use Mykholy\Flowguard\Domain\OperationStatus;
 use Mykholy\Flowguard\Flowguard;
 use Mykholy\Flowguard\Infrastructure\DatabaseEvidenceJournal;
@@ -96,7 +97,7 @@ final readonly class Checkout
         $stored = DB::table('flowguard_operations')->where('id', $operation)->firstOrFail();
         abort_unless($stored->scope === 'tenant.'.$tenant.':payments', 404);
         abort_unless($stored->status === OperationStatus::RequiresReconciliation->value, 409);
-        $snapshot = new \Mykholy\Flowguard\Domain\OperationSnapshot($operation, $stored->scope, OperationStatus::from($stored->status), null, null);
+        $snapshot = new OperationSnapshot($operation, $stored->scope, OperationStatus::from($stored->status), null, null);
         $this->policy->assertCanRecord($actor, $snapshot);
         $id = (string) Str::uuid();
         DB::table('demo_approvals')->insert(['id' => $id, 'tenant_id' => $tenant, 'operation_id' => $operation,

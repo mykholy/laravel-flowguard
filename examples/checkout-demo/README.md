@@ -53,7 +53,7 @@ Tests use and reset only `/tmp/flowguard-demo-test.sqlite` by default, or an exp
 
 - Atomic order/claim/outbox rollback; exact duplicates and changed-payload conflicts.
 - Server-derived tenant identity and merchant/reviewer permissions.
-- Durable acceptance followed by an actual HTTP timeout, read-only evidence, two-person approval, and no recapture.
+- Durable acceptance followed by an actual HTTP timeout, read-only evidence, two-person approval, stale-evidence rejection, and no recapture.
 - Signed webhook validation, tenant binding, replay window, and deduplication.
 - Outbox transport timeout, independent worker exit after remote commit, lease recovery, and stale-owner fencing.
 - Worker exit with a processing claim before capture, which remains fail closed.

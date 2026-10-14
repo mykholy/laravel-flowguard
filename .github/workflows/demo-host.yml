@@ -22,16 +22,8 @@ jobs:
         coverage: none
         tools: composer:v2
     - run: composer install --no-interaction --no-progress
-    - name: Verify demo formatting and show reproducible patch
-      run: |-
-        vendor/bin/pint examples/checkout-demo
-        if ! git diff --quiet -- examples; then
-          echo DEMO_FORMAT_PATCH_START
-          git diff -- examples | base64 -w0
-          echo
-          echo DEMO_FORMAT_PATCH_END
-          exit 1
-        fi
+    - name: Verify demo PHP formatting
+      run: vendor/bin/pint --test examples/checkout-demo
   demo-host:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -66,7 +58,7 @@ jobs:
       DB_PORT: ${{ matrix.db == 'mysql' && '3306' || '5432' }}
       DB_USERNAME: flowguard
       DB_PASSWORD: flowguard
-    name: "Demo Laravel ${{ matrix.laravel }} \xB7 ${{ matrix.db }}"
+    name: Demo Laravel ${{ matrix.laravel }} · ${{ matrix.db }}
     strategy:
       fail-fast: false
       matrix:
@@ -134,7 +126,7 @@ jobs:
       DB_PASSWORD: flowguard
       DEMO_RESTORE_CONFIRM: disposable-only
       DEMO_PROVIDER_URL: http://127.0.0.1:8099
-    name: "Demo full host native restore \xB7 ${{ matrix.db }}"
+    name: Demo full host native restore · ${{ matrix.db }}
     strategy:
       fail-fast: false
       matrix:

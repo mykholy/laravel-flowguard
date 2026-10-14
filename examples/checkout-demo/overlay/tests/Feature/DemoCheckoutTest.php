@@ -176,6 +176,22 @@ final class DemoCheckoutTest extends TestCase
         self::assertSame(1, DB::table('flowguard_resolution_decisions')->count());
     }
 
+    public function test_expired_evidence_cannot_settle_the_order_or_recapture_payment(): void
+    {
+        $id = $this->order();
+        config(['demo.delay_ack' => true]);
+        $operation = $this->api('POST', '/orders/'.$id.'/charge')->assertStatus(202)->json('operation_id');
+        config(['demo.delay_ack' => false]);
+        $evidence = $this->api('POST', '/operations/'.$operation.'/evidence', actor: 'reviewer-a')->assertCreated()->json('id');
+        $approval = $this->api('POST', '/operations/'.$operation.'/approvals', ['evidence_id' => $evidence], 'reviewer-a')->assertCreated()->json('id');
+        DB::table('flowguard_reconciliation_evidence')->where('id', $evidence)->update(['observed_at' => now()->subHour()]);
+        $this->api('POST', '/approvals/'.$approval.'/approve', actor: 'reviewer-b')->assertConflict();
+        self::assertSame(0, DB::table('flowguard_resolution_decisions')->count());
+        self::assertSame('pending', DB::table('demo_orders')->where('id', $id)->value('status'));
+        self::assertNull(DB::table('demo_approvals')->where('id', $approval)->value('approver'));
+        self::assertSame(1, app(ProviderClient::class)->receipt($operation)['attempts']);
+    }
+
     private function webhook(array $payload, string $tenant = '1', ?int $timestamp = null, bool $valid = true)
     {
         $body = json_encode($payload, JSON_THROW_ON_ERROR);

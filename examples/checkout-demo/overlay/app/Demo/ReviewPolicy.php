@@ -30,6 +30,7 @@ final class ReviewPolicy implements EvidenceAuthorization, ResolutionAuthorizati
         abort_unless($approval !== null && ! $approval->resolved
             && $initiatorReference !== $approverReference && $approval->initiator === $initiatorReference
             && $approval->approver === $approverReference && $approval->operation_id === $operation->id
-            && $approval->evidence_id === $evidence->id, 403);
+            && $approval->evidence_id === $evidence->id
+            && (int) $approval->tenant_id === config('demo.principals.'.$approverReference.'.tenant'), 403);
     }
 }
