@@ -50,6 +50,9 @@ use PHP named arguments, so renaming a parameter is a compatibility change.
   retried as if it failed.
 - Manual resolution requires the host application's evidence and durable,
   independently authenticated two-actor approval policy.
+- `ReconciliationEvidence` accepts `providerReference:` at construction but
+  deliberately retains only `providerReferencePresent`, not the original
+  identifier. Do not depend on reading the raw reference from this DTO.
 - Existing database records cannot be removed by an automatic migration
   rollback. Use reviewed forward migrations and backup/restore procedures.
 

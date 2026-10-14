@@ -42,3 +42,5 @@ describe the current development branch and do not imply release guarantees.
 See [release criteria](docs/RELEASE_CRITERIA.md). No full provider staging
 integration, independent human security sign-off or production representative
 capacity proof has been completed. No exactly-once external effects are claimed.
+
+- Evidence DTO discards raw provider identifiers after validating their shape.
