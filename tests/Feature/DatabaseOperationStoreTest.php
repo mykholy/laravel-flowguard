@@ -170,7 +170,11 @@ final class DatabaseOperationStoreTest extends TestCase
         $owner = $guard->begin('payments.capture', 'reason-boundary', ['amount_minor' => 100]);
         $store = new DatabaseOperationStore(DB::connection());
 
-        foreach (['Gateway timeout: Bearer secret', "provider_timeout\nAuthorization: token", str_repeat('a', 121)] as $reason) {
+        foreach ([
+            'Gateway timeout: Bearer secret',
+            "provider_timeout\nAuthorization: token",
+            str_repeat('a', 121),
+        ] as $reason) {
             try {
                 $store->requireReconciliation($owner->claim(), $reason);
                 self::fail('Unsafe reason unexpectedly reached storage.');
