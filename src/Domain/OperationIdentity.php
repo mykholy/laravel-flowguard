@@ -28,7 +28,8 @@ final readonly class OperationIdentity
         }
 
         try {
-            $encoded = json_encode(self::canonicalize($payload), JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $visited = 0;
+            $encoded = json_encode(self::canonicalize($payload, 0, $visited), JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         } catch (JsonException $exception) {
             throw new InvalidArgumentException('Payload cannot be fingerprinted as JSON.', 0, $exception);
         }
@@ -44,15 +45,23 @@ final readonly class OperationIdentity
      * @param  array<string|int, mixed>  $items
      * @return array<string|int, mixed>
      */
-    private static function canonicalize(array $items): array
+    private static function canonicalize(array $items, int $depth, int &$visited): array
     {
+        if ($depth > 32) {
+            throw new InvalidArgumentException('Payload nesting must not exceed 32 levels.');
+        }
+
         if (! array_is_list($items)) {
             ksort($items, SORT_STRING);
         }
 
         foreach ($items as $key => $value) {
+            if (++$visited > 32768) {
+                throw new InvalidArgumentException('Payload contains too many JSON values.');
+            }
+
             if (is_array($value)) {
-                $items[$key] = self::canonicalize($value);
+                $items[$key] = self::canonicalize($value, $depth + 1, $visited);
             } elseif (! is_null($value) && ! is_scalar($value)) {
                 throw new InvalidArgumentException('Payload must contain JSON-native scalars and arrays only.');
             }
