@@ -6,6 +6,22 @@ releases and do not establish production readiness.
 
 ## Unreleased
 
+## v0.1.0-beta.3 — 2026-10-14
+
+### Fixed
+- The optional Stripe demo now sends `allowed_payment_method_types` and pins
+  `Stripe-Version: 2026-09-30.endive`; the removed legacy parameter caused HTTP
+  400 on a real sandbox account. Core package APIs and schemas are unchanged.
+
+### Verified
+- Real Stripe HTTPS execution: two USD 5.00 test payments, one observed captured
+  charge per intent, application acknowledgement discard, and GET-only recovery
+  after an injected local read failure. No live-mode charges occurred.
+- The failed pre-fix creation remained unknown without confirmation/replay.
+  Evidence and precise boundaries are in
+  `docs/evidence/stripe-sandbox-2026-10-14.md`; full external acceptance and
+  independent human review remain open.
+
 ## v0.1.0-beta.2 — 2026-10-14
 
 ### Added
