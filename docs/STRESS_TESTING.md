@@ -51,3 +51,34 @@ measured, not assumed.
 A clean ten-worker result alone does **not** close the v1.0.0 100/500-worker
 release gate. Review every database/workload result before setting acceptance
 thresholds.
+
+## Synchronized start and retained evidence
+
+Workers now bootstrap PHP and open their SQL connections **before** reporting
+readiness. The parent opens the start gate only after every worker is ready;
+a worker exit or a 180-second readiness timeout invalidates the workload.
+This avoids reporting a nominal 500-worker run whose processes started their
+work at different times during PHP bootstrap.
+
+The stress workflow defaults to three repetitions. Changes to the harness run
+automatically on pull requests with ten workers on each engine; manual dispatch
+selects larger workloads. Explicit Bash pipefail propagates benchmark failures
+through the output capture pipeline. It retains JSON results,
+`/usr/bin/time -v` process resource summaries, and database counter snapshots
+before/after the workload. Worker output includes reserve poll counts and peak
+PHP allocated memory. The reported maximum is per worker, not aggregate RAM.
+The synchronized delivery wall time excludes process startup; overall wall time
+includes it. Latency includes connection retrieval, reservation and acknowledgement.
+
+Database counters are aggregate diagnostics: MySQL reports instance-level lock
+wait/deadlock/connection counters; PostgreSQL reports database-level deadlocks,
+conflicts and transaction counters. They may include other activity and are not
+per-query lock-wait measurements. Resource summaries are process measurements,
+not continuous database CPU/memory sampling. A failed connection ceiling is a
+failed workload, not a successful reduced-concurrency run.
+
+Correctness thresholds remain predefined: all N workers must succeed, with N
+unique deliveries, N delivered rows and exactly N reservation attempts. Review
+p95/p99 and resource use against **host-specific** budgets declared before a
+representative staging run. These disposable runner artifacts alone do not close
+the production stress gate.

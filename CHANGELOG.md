@@ -44,3 +44,11 @@ integration, independent human security sign-off or production representative
 capacity proof has been completed. No exactly-once external effects are claimed.
 
 - Evidence DTO discards raw provider identifiers after validating their shape.
+
+### Release preparation
+- Composer archives exclude development-only files and are validated before
+  installation across the clean Laravel/database matrix; a ZIP and checksum
+  are retained as build evidence.
+- Contention workloads wait for every PHP process and SQL connection to become
+  ready before simultaneous delivery, and retain repeated-run resource and
+  database-counter evidence in the manual stress workflow.

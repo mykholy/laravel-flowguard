@@ -54,15 +54,30 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, pdo_sqlite, sqlite3, pdo_mysql, pdo_pgsql, dom, xml
+          extensions: mbstring, pdo_sqlite, sqlite3, pdo_mysql, pdo_pgsql, dom, xml, zip
           coverage: none
           tools: composer:v2
+      - name: Build and verify installable Composer distribution
+        run: |
+          composer archive --format=zip --dir=dist --file=flowguard
+          php tools/check-distribution.php dist/flowguard.zip
+          unzip -q dist/flowguard.zip -d dist/package
+          sha256sum dist/flowguard.zip > dist/flowguard.sha256
+      - name: Save reviewed distribution
+        if: matrix.laravel == '13' && matrix.db == 'sqlite'
+        uses: actions/upload-artifact@v4
+        with:
+          name: flowguard-composer-distribution
+          path: |
+            dist/flowguard.zip
+            dist/flowguard.sha256
+          retention-days: 30
       - name: Create clean Laravel application
         run: composer create-project "laravel/laravel:^${{ matrix.laravel }}" smoke-app --no-interaction --prefer-dist --no-progress
       - name: Install Flowguard from local source tree
         working-directory: smoke-app
         run: |
-          composer config repositories.flowguard path ../
+          composer config repositories.flowguard path ../dist/package
           composer require 'mykholy/laravel-flowguard:@dev' --no-interaction --with-all-dependencies --no-progress
       - name: Select disposable database
         working-directory: smoke-app

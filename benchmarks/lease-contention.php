@@ -30,6 +30,8 @@ $children = [];
 $failures = [];
 $samples = [];
 $ids = [];
+$polls = [];
+$memory = [];
 $started = hrtime(true);
 
 $db->getSchemaBuilder()->create($table, static function (Blueprint $schema): void {
@@ -73,6 +75,7 @@ try {
     ]);
 
     for ($i = 0; $i < $workersRequested; $i++) {
+        $env['FG_STRESS_SLOT'] = (string) $i;
         $pipes = [];
         $process = proc_open([PHP_BINARY, __DIR__.'/lease-worker.php'], [
             0 => ['pipe', 'r'],
@@ -88,6 +91,28 @@ try {
         $children[] = ['process' => $process, 'pipes' => $pipes];
     }
 
+    // proc_open returning does not mean PHP bootstrap or a DB connection is ready.
+    $readyDeadline = microtime(true) + 180;
+    do {
+        $ready = 0;
+        for ($i = 0; $i < $workersRequested; $i++) {
+            $ready += is_file($gate.'.ready.'.$i) ? 1 : 0;
+        }
+        if ($ready === $workersRequested) {
+            break;
+        }
+        foreach ($children as $child) {
+            if (proc_get_status($child['process'])['running'] === false) {
+                throw new RuntimeException('A worker exited before the synchronized start; workload invalid.');
+            }
+        }
+        if (microtime(true) >= $readyDeadline) {
+            throw new RuntimeException('Not all workers became ready; workload invalid.');
+        }
+        usleep(10000);
+    } while (true);
+
+    $deliveryStarted = hrtime(true);
     touch($gate);
 
     foreach ($children as $child) {
@@ -114,6 +139,8 @@ try {
 
             $ids[] = $row['id'];
             $samples[] = (float) $row['elapsed_ms'];
+            $polls[] = (int) ($row['reserve_polls'] ?? 0);
+            $memory[] = (int) ($row['peak_memory_bytes'] ?? 0);
         } catch (Throwable $exception) {
             $failures[] = $exception::class;
         }
@@ -141,6 +168,10 @@ try {
         'p50_ms' => $quantile(0.50),
         'p95_ms' => $quantile(0.95),
         'p99_ms' => $quantile(0.99),
+        'synchronized_delivery_wall_ms' => round((hrtime(true) - $deliveryStarted) / 1_000_000, 3),
+        'reserve_polls_total' => array_sum($polls),
+        'max_worker_peak_memory_bytes' => $memory === [] ? null : max($memory),
+        'php_version' => PHP_VERSION,
         'elapsed_wall_ms' => round((hrtime(true) - $started) / 1_000_000, 3),
         'failures_by_class' => array_count_values($failures),
         'benchmark_only' => true,
@@ -154,6 +185,9 @@ try {
     }
 } finally {
     @unlink($gate);
+    for ($i = 0; $i < $workersRequested; $i++) {
+        @unlink($gate.'.ready.'.$i);
+    }
 
     foreach ($children as $child) {
         if (is_resource($child['process'])) {
@@ -169,5 +203,8 @@ try {
         }
     }
 
+    for ($i = 0; $i < $workersRequested; $i++) {
+        @unlink($gate.'.ready.'.$i);
+    }
     $db->getSchemaBuilder()->dropIfExists($table);
 }
