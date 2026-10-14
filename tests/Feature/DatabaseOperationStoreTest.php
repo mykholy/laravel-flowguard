@@ -106,6 +106,31 @@ final class DatabaseOperationStoreTest extends TestCase
         $guard->complete($operation->claim(), $metadata);
     }
 
+    public function test_shared_array_branches_cannot_exhaust_validation_before_size_checks(): void
+    {
+        $guard = $this->app->make(Flowguard::class);
+        $operation = $guard->begin('orders.place', 'shared-array-metadata', ['quantity' => 1]);
+
+        $levels = [['value' => true]];
+
+        for ($i = 1; $i <= 16; $i++) {
+            $previous = &$levels[$i - 1];
+            $levels[$i] = ['left' => &$previous, 'right' => &$previous];
+            unset($previous);
+        }
+
+        $metadata = ['root' => &$levels[16]];
+
+        try {
+            $guard->complete($operation->claim(), $metadata);
+            self::fail('Completion must reject a metadata graph exceeding the visit limit.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('too many JSON values', $exception->getMessage());
+        }
+
+        self::assertSame('processing', DB::table('flowguard_operations')->value('status'));
+    }
+
     public function test_unowned_claim_cannot_complete(): void
     {
         $guard = $this->app->make(Flowguard::class);
