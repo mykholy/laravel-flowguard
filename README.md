@@ -2,7 +2,7 @@
 
 **Durable business-operation primitives for Laravel 12 and 13.**
 
-> **Stable contract: v1.0.0.** Supports Laravel 12/13 and PHP 8.3/8.4/8.5,
+> **Stable release: v1.0.1.** Supports Laravel 12/13 and PHP 8.3/8.4/8.5,
 > with SQLite, MySQL 8 and PostgreSQL 16 validation. The supported PHP API and
 > persisted schema follow [SemVer](docs/PUBLIC_API.md).
 > This release has **not received an independent human security audit** and does
@@ -43,7 +43,7 @@ php artisan migrate
 php artisan flowguard:doctor
 ```
 
-Review the [v1.0.0 release notes](https://github.com/mykholy/laravel-flowguard/releases/tag/v1.0.0)
+Review the [v1.0.1 release notes](https://github.com/mykholy/laravel-flowguard/releases/tag/v1.0.1)
 and [upgrade procedure](docs/PACKAGE_RELEASE.md). Pin a released version in your
 lockfile and validate your own provider adapter before production deployment.
 
