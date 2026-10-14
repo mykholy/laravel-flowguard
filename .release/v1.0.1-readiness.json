@@ -1,0 +1,20 @@
+{
+  "version": "v1.0.1",
+  "status": "PR verified; awaiting exact-main-commit publication checks",
+  "reviewed_code_commit": "643f7630a19dc73ea3331311e264c7e0594c9803",
+  "merge_commit": "78e67601828d67e43db092c89911c35f29b17ed0",
+  "previous_stable": {
+    "version": "v1.0.0",
+    "source": "78072edc44f477f9383779603e22dec0cab07fc7",
+    "publication_run": 38606086335,
+    "public_install_job": 115997285146
+  },
+  "verified_pr_runs": {
+    "ci": 38606825238,
+    "clean_install": 38606824994,
+    "demo": 38606825128,
+    "native_restore": 38606825221,
+    "release_validation": 38606825209
+  },
+  "note": "No push-triggered runs were observed for the merge while all workflows remained active. Recording the verified readiness state creates a new push event. Runtime, migrations and the reviewed patch are unchanged. Publication must still wait for all four exact-commit workflow groups; no gate is bypassed."
+}
