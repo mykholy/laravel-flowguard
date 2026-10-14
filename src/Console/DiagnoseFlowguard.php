@@ -115,7 +115,8 @@ final class DiagnoseFlowguard extends Command
                     foreach ($foreignKeys as $foreignKey) {
                         if ($foreignKey['columns'] === [$column]
                             && $foreignKey['foreign_table'] === $referencedTable
-                            && $foreignKey['foreign_columns'] === ['id']) {
+                            && $foreignKey['foreign_columns'] === ['id']
+                            && strtolower((string) $foreignKey['on_delete']) === 'restrict') {
                             $found = true;
 
                             break;
