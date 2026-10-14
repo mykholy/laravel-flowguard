@@ -130,6 +130,12 @@ final readonly class DatabaseOperationStore implements OperationStore
 
     public function requireReconciliation(Claim $claim, string $reason): OperationSnapshot
     {
+        // Callers may use OperationStore directly, bypassing Flowguard's
+        // convenience validation. Never persist raw provider exceptions.
+        if (preg_match('/^[a-z][a-z0-9._-]{0,119}$/D', $reason) !== 1) {
+            throw new InvalidArgumentException('Reason must be a machine-readable, non-sensitive code of 1-120 ASCII characters.');
+        }
+
         return $this->transition($claim, OperationStatus::RequiresReconciliation, null, $reason);
     }
 

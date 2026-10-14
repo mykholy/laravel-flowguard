@@ -48,6 +48,9 @@ use PHP named arguments, so renaming a parameter is a compatibility change.
   **not guaranteed**.
 - A webhook or provider response that has an unknown result must not be
   retried as if it failed.
+- Reconciliation reasons must be bounded ASCII machine codes, even for callers
+  using `OperationStore` directly. Raw provider exception messages and HTTP
+  response bodies are rejected at the persistence boundary.
 - Manual resolution requires the host application's evidence and durable,
   independently authenticated two-actor approval policy.
 - `ReconciliationEvidence` accepts `providerReference:` at construction but

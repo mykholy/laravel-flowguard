@@ -12,6 +12,7 @@ use Mykholy\Flowguard\Domain\OperationStatus;
 use Mykholy\Flowguard\Exceptions\IdempotencyConflict;
 use Mykholy\Flowguard\Exceptions\InvalidTransition;
 use Mykholy\Flowguard\Flowguard;
+use Mykholy\Flowguard\Infrastructure\DatabaseOperationStore;
 
 final class DatabaseOperationStoreTest extends TestCase
 {
@@ -161,6 +162,33 @@ final class DatabaseOperationStoreTest extends TestCase
         $another = $guard->begin('payments.capture', 'possibly-already-charged', ['amount' => 99]);
         self::assertFalse($another->acquired());
         self::assertSame(OperationStatus::Processing, $another->operation->status);
+    }
+
+    public function test_direct_store_rejects_sensitive_reconciliation_reasons_without_mutating_state(): void
+    {
+        $guard = $this->app->make(Flowguard::class);
+        $owner = $guard->begin('payments.capture', 'reason-boundary', ['amount_minor' => 100]);
+        $store = new DatabaseOperationStore(DB::connection());
+
+        foreach ([
+            'Gateway timeout: Bearer secret',
+            "provider_timeout\nAuthorization: token",
+            str_repeat('a', 121),
+        ] as $reason) {
+            try {
+                $store->requireReconciliation($owner->claim(), $reason);
+                self::fail('Unsafe reason unexpectedly reached storage.');
+            } catch (InvalidArgumentException $exception) {
+                self::assertStringContainsString('machine-readable', $exception->getMessage());
+            }
+
+            self::assertSame('processing', DB::table('flowguard_operations')->value('status'));
+            self::assertNull(DB::table('flowguard_operations')->value('reconciliation_reason'));
+        }
+
+        $unknown = $store->requireReconciliation($owner->claim(), 'provider_timeout');
+        self::assertSame(OperationStatus::RequiresReconciliation, $unknown->status);
+        self::assertSame('provider_timeout', $unknown->reconciliationReason);
     }
 
     public function test_unknown_outcome_is_terminal_until_explicit_reconciliation(): void
