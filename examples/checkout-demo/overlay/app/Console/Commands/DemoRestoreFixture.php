@@ -9,6 +9,7 @@ use App\Demo\OrderPublisher;
 use App\Demo\ProviderClient;
 use Illuminate\Console\Command;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Mykholy\Flowguard\Inbox\DatabaseInboxRecorder;
 use Mykholy\Flowguard\Outbox\DatabaseOutboxLeaseStore;
@@ -39,6 +40,8 @@ final class DemoRestoreFixture extends Command
             $this->check(DB::table('demo_orders')->count() === 0, 'Prepare requires an empty migrated host.');
             $first = $checkout->create(1, 'restore-paid', 12500, 'USD')['id'];
             $paid = $checkout->charge(1, $first)['operation_id'];
+            DB::table('demo_payments')->where('operation_id', $paid)->update([
+                'encrypted_provider_reference' => Crypt::encryptString('synthetic-restore-only')]);
             $this->check($dispatcher->dispatchOne(), 'Delivered fixture missing.');
             $second = $checkout->create(1, 'restore-unknown', 12500, 'USD')['id'];
             config(['demo.delay_ack' => true]);
@@ -60,6 +63,8 @@ final class DemoRestoreFixture extends Command
         } else {
             $data = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
             $this->check($this->fingerprints() === $data['fingerprints'], 'Native restore changed persisted host or Flowguard rows.');
+            $encrypted = DB::table('demo_payments')->where('operation_id', $data['paid'])->value('encrypted_provider_reference');
+            $this->check(Crypt::decryptString($encrypted) === 'synthetic-restore-only', 'Restored provider reference cannot be decrypted with the preserved host key.');
             $this->check($checkout->create(1, 'restore-paid', 12500, 'USD')['id'] === $data['first'], 'Restored order claim lost deduplication.');
             $this->check($checkout->charge(1, $data['first'])['duplicate'], 'Restored payment was recaptured.');
             $this->check($provider->receipt($data['paid'])['attempts'] === 1, 'Completed payment had another provider attempt.');
