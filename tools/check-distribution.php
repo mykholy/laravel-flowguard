@@ -23,7 +23,7 @@ for ($index = 0; $index < $zip->numFiles; $index++) {
     if ($path === false || str_starts_with($path, '/') || in_array('..', explode('/', $path), true)) {
         throw new RuntimeException('Unsafe archive entry.');
     }
-    if (preg_match('~^(?:vendor|tests|benchmarks|tools|dist|\.git|\.github)/|^\.env(?:\.|$)|^composer\.lock$~', $path) === 1) {
+    if (preg_match('~^(?:vendor|tests|benchmarks|tools|dist|examples|\.git|\.github)/|^\.env(?:\.|$)|^composer\.lock$~', $path) === 1) {
         throw new RuntimeException('Development or private file included: '.$path);
     }
     if (str_starts_with($path, 'database/migrations/') && str_ends_with($path, '.php')) {
