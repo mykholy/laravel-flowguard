@@ -1,6 +1,10 @@
-name: Outbox Stress (manual)
+name: Outbox Stress Evidence
 
 on:
+  pull_request:
+    paths:
+      - benchmarks/**
+      - .github/workflows/manual-stress.yml
   workflow_dispatch:
     inputs:
       workers:
@@ -21,7 +25,7 @@ permissions:
 
 jobs:
   stress:
-    name: ${{ matrix.db }} · ${{ inputs.workers }} workers
+    name: ${{ matrix.db }} · ${{ inputs.workers || '10' }} workers
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -58,7 +62,7 @@ jobs:
       FLOWGUARD_TEST_PORT: ${{ matrix.db == 'mysql' && '3306' || '5432' }}
       FLOWGUARD_TEST_USERNAME: flowguard
       FLOWGUARD_TEST_PASSWORD: flowguard
-      FLOWGUARD_STRESS_WORKERS: ${{ inputs.workers }}
+      FLOWGUARD_STRESS_WORKERS: ${{ inputs.workers || '10' }}
       FLOWGUARD_STRESS_LARGE_RUN: '1'
     steps:
       - uses: actions/checkout@v4
@@ -71,8 +75,9 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
       - name: Run repeated independent-worker contention benchmarks
+        shell: bash
         env:
-          STRESS_REPETITIONS: ${{ inputs.repetitions }}
+          STRESS_REPETITIONS: ${{ inputs.repetitions || '3' }}
         run: |
           mkdir -p stress-results
           php benchmarks/database-metrics.php > stress-results/database-before.json
@@ -85,7 +90,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: stress-${{ matrix.db }}-${{ inputs.workers }}-workers
+          name: stress-${{ matrix.db }}-${{ inputs.workers || '10' }}-workers
           path: stress-results/
           if-no-files-found: error
           retention-days: 30

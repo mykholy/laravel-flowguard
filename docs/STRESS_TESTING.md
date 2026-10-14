@@ -60,7 +60,10 @@ a worker exit or a 180-second readiness timeout invalidates the workload.
 This avoids reporting a nominal 500-worker run whose processes started their
 work at different times during PHP bootstrap.
 
-The manual workflow defaults to three repetitions. It retains JSON results,
+The stress workflow defaults to three repetitions. Changes to the harness run
+automatically on pull requests with ten workers on each engine; manual dispatch
+selects larger workloads. Explicit Bash pipefail propagates benchmark failures
+through the output capture pipeline. It retains JSON results,
 `/usr/bin/time -v` process resource summaries, and database counter snapshots
 before/after the workload. Worker output includes reserve poll counts and peak
 PHP allocated memory. The reported maximum is per worker, not aggregate RAM.
