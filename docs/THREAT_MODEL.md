@@ -68,3 +68,12 @@ These guards do not protect against PHP reflection, unrestricted memory dumps,
 explicit property extraction, `var_export`, or logging the raw constructor
 arguments. Never pass entire capabilities to application loggers or error
 reporters. An externally compromised process can still read its own memory.
+
+## Provider reference minimization
+
+`ReconciliationEvidence` accepts an optional provider reference for validation,
+but retains only `providerReferencePresent` (a boolean). The raw value is not
+stored on the evidence object or in the evidence journal, so ordinary object
+diagnostics and JSON output cannot disclose it. The caller remains responsible
+for not logging constructor arguments or HTTP request bodies. Do not treat
+SHA-256 hashes as anonymization of low-entropy identifiers.
