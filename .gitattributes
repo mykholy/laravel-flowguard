@@ -12,3 +12,5 @@
 /dist export-ignore
 /.release export-ignore
 /examples export-ignore
+
+/docs/assets/flowguard-social-preview.jpg export-ignore

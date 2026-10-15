@@ -1,6 +1,10 @@
+<p align="center">
+  <img src="docs/assets/flowguard-banner.webp" alt="Laravel FlowGuard — guarded operation flow, durable webhooks and transactional outbox" width="100%">
+</p>
+
 # Laravel FlowGuard
 
-**Laravel idempotency, durable webhooks and transactional outbox.**
+**Durable operation ownership for requests, webhooks and background delivery.**
 
 [![CI](https://github.com/mykholy/laravel-flowguard/actions/workflows/ci.yml/badge.svg)](https://github.com/mykholy/laravel-flowguard/actions/workflows/ci.yml)
 [![Packagist version](https://img.shields.io/packagist/v/mykholy/laravel-flowguard)](https://packagist.org/packages/mykholy/laravel-flowguard)
@@ -8,50 +12,42 @@
 [![Laravel](https://img.shields.io/badge/Laravel-12%20%7C%2013-FF2D20)](composer.json)
 [![License](https://img.shields.io/github/license/mykholy/laravel-flowguard)](LICENSE)
 
-FlowGuard coordinates operations that must remain safe when requests repeat,
-workers crash or a provider times out after accepting a payment. It records who
-owns an operation, preserves its payload identity and keeps uncertain outcomes
-blocked until the application investigates them.
+A customer clicks **Pay** twice. A webhook arrives again. A worker dies after the
+provider accepted its request. FlowGuard gives your application durable identities,
+exclusive operation claims and explicit unknown outcomes so it can handle those
+failures deliberately.
 
 **Stable: [v1.0.2](https://github.com/mykholy/laravel-flowguard/releases/tag/v1.0.2).**
-The supported PHP API and persisted schema follow [SemVer](docs/PUBLIC_API.md).
-The [publication record](docs/STABLE_READINESS.md) links the exact-source checks,
-Composer distribution and fresh public installation.
+The [public API and storage contract](docs/PUBLIC_API.md) follow SemVer.
 
-[Installation](#installation) · [Payment example](#example-payment-capture) ·
-[Checkout demo](examples/checkout-demo/README.md) · [Public API](docs/PUBLIC_API.md) ·
-[Operations](docs/OPERATIONS.md) · [Security](SECURITY.md)
+[Install](#installation) · [Payment example](#payment-example) ·
+[Getting started](docs/GETTING_STARTED.md) · [Documentation](docs/README.md) ·
+[Runnable demo](examples/checkout-demo/README.md)
 
-## When to use FlowGuard
+## What it helps you build
 
-| Failure scenario | Primitive | Application responsibility |
+| Your failure scenario | FlowGuard provides | You supply |
 | --- | --- | --- |
-| Two requests attempt the same payment or fulfillment | Scoped operation claim and immutable fingerprint | Derive tenant identity on the server; use provider idempotency |
-| A provider times out with an unknown result | Explicit reconciliation state and read-only evidence | Investigate the provider outcome before any further effect |
-| A signed webhook arrives repeatedly | Durable inbox receipt | Verify the signature and tenant/event binding first |
-| A business transaction commits but queue dispatch fails | Outbox recording on the same database connection | Record the business write and signal in one transaction |
-| A publisher crashes after delivery | Expiring lease, fenced acknowledgement and bounded retries | Deduplicate at the destination; supervise the worker |
+| Two requests attempt the same payment or fulfillment | Scoped operation ownership and immutable payload fingerprints | Authorized tenant context and provider idempotency |
+| A provider times out after possibly succeeding | Explicit reconciliation state and read-only evidence contracts | Provider lookup and outcome handling |
+| A verified webhook arrives repeatedly | Durable inbox receipt and atomic outbox handoff | Signature verification and stable event identity |
+| A database change commits but queue dispatch fails | Transactional outbox on the business connection | Atomic business write and event recording |
+| A worker crashes after delivering a message | Expiring leases, fenced acknowledgement and bounded retries | Supervised publisher and destination deduplication |
 
-Telescope, Horizon and Pulse help observe applications and workers. FlowGuard
-adds durable ownership and delivery primitives to your business workflow.
-
-## Included primitives
-
-- Scoped idempotency claims with immutable payload fingerprints and owner-only
-  transitions, including an explicit unknown-outcome state.
-- Read-only reconciliation inspection, append-only evidence and optional
-  authorization-gated manual outcome classification.
-- Durable inbox receipts and atomic outbox recording within business transactions.
-- Outbox leasing, bounded retry, fenced acknowledgement and a transport-neutral
-  publisher contract.
-- Read-only diagnostics for storage readiness and stale operations.
-- MySQL/PostgreSQL independent-process contention and crash-point tests.
-
-The host application still owns gateway signature verification, tenant security,
-publisher timeouts, remote idempotency and any real two-person approval workflow.
-Flowguard does not guarantee exactly-once effects across external systems.
+Telescope, Horizon and Pulse help observe your application. FlowGuard coordinates
+ownership and durable handoff inside the business workflow.
 
 ## Installation
+
+```bash
+composer require mykholy/laravel-flowguard:^1.0
+php artisan migrate
+php artisan flowguard:doctor
+```
+
+Laravel discovers the service provider and loads the migrations automatically.
+The doctor checks local storage readiness. Follow the
+[getting-started guide](docs/GETTING_STARTED.md) to choose an integration path.
 
 | Dependency | Supported / verified versions |
 | --- | --- |
@@ -60,42 +56,22 @@ Flowguard does not guarantee exactly-once effects across external systems.
 | Database | SQLite, MySQL 8, PostgreSQL 16 |
 | Package manager | Composer 2 |
 
-Use a durable transactional database. CI validates compatibility, clean archive
-installation and native SQL restore separately.
-
-The package is published on [Packagist](https://packagist.org/packages/mykholy/laravel-flowguard).
-Install the supported 1.x series:
-
-```bash
-composer require mykholy/laravel-flowguard:^1.0
-php artisan migrate
-php artisan flowguard:doctor
-```
-
-Review the [v1.0.2 release notes](https://github.com/mykholy/laravel-flowguard/releases/tag/v1.0.2)
-and [upgrade procedure](docs/PACKAGE_RELEASE.md). Pin a released version in your
-lockfile and validate your own provider adapter before production deployment.
-
-The service provider is registered using Laravel package discovery. Its migration is
-loaded automatically and is applied by your normal `php artisan migrate` command.
-To customize the connection/table, publish the config:
+To select a database connection, publish the configuration **before migrating**:
 
 ```bash
 php artisan vendor:publish --tag=flowguard-config
-php artisan migrate
-php artisan flowguard:doctor
-php artisan flowguard:outbox --max-attempts=10 --limit=50
-php artisan flowguard:stale --minutes=15 --limit=50
 ```
 
-`flowguard:stale` is read-only and shows old processing claims for investigation.
-It never authorizes a replay or infers the external provider outcome.
+Set `FLOWGUARD_DB_CONNECTION` to a configured Laravel connection. The default is
+your application's default connection. Use durable transactional storage and the
+same connection for business writes and outbox signals. Review
+[upgrades](docs/PACKAGE_RELEASE.md) before changing an existing installation.
 
-Configure a durable transactional database with `FLOWGUARD_DB_CONNECTION`; defaults
-to your Laravel application's default connection. Do not change connection/table
-config after creating data without an intentional migration.
+## Payment example
 
-## Example: payment capture
+The following is an application integration sketch. `$gateway`, the authorized
+merchant, order and amount come from your application; FlowGuard does not bundle
+a payment gateway.
 
 ```php
 use Mykholy\Flowguard\Flowguard;
@@ -137,89 +113,70 @@ according to provider semantics. A provider can charge successfully even when lo
 completion fails. Do not treat failed `complete()` as grounds for retrying the charge.
 See [RFC-001](docs/RFC-001-CORE.md) and [threat model](docs/THREAT_MODEL.md).
 
-## Read-only reconciliation inspection
+## Webhooks and reliable delivery
 
-A provider-specific `Reconciler` may **read** the external state of an operation
-explicitly marked `requires_reconciliation`. `ReconciliationInspector` returns
-bounded, typed `ReconciliationEvidence` and cannot finalize or replay anything.
-The caller must authenticate and authorize the inspection and use a read-only
-provider lookup. This is intentionally **not** an automated recovery system.
+Use only the primitives your workflow needs:
 
-See [RFC-002](docs/RFC-002-READ_ONLY.md) for the API and limits.
+- **[Webhook inbox](docs/INBOX.md):** accept an already verified event once per
+  tenant identity and payload, with an atomic outbox signal.
+- **[Transactional outbox](docs/GETTING_STARTED.md#record-a-business-event):**
+  record a durable signal alongside the business write on the same connection.
+- **[Publisher integration](docs/PUBLISHING.md):** bind your own
+  `OutboxPublisher`, then run an explicitly supervised delivery worker.
+- **[Reconciliation](docs/RFC-002-READ_ONLY.md):** inspect unknown outcomes;
+  optional evidence journaling and manual classification require host policies.
 
-## Opt-in durable reconciliation evidence journal
+There is no automatic publisher schedule. After binding your publisher, one
+bounded delivery attempt is available through:
 
-A provider observation is not permission to retry or complete a payment. Flowguard
-can now persist a **reduced, authorized audit observation** on the same database
-connection, while leaving the operation in `requires_reconciliation`.
+```bash
+php artisan flowguard:dispatch-once --lease=60 --retry=60 --max-attempts=10
+```
 
-- Requires an application-supplied `EvidenceAuthorization` policy. No default
-  allow-all binding exists. Your policy must authenticate the operator and enforce
-  tenant ownership; an actor string alone is not authentication.
-- Rechecks the database row under a transaction lock before inserting evidence.
-- Stores typed observation metadata but **not** raw provider references, request
-  payloads, headers or gateway responses.
-- Does **not** implement replay, capture, refund, or finalization.
+Consumers must deduplicate by message identity. A worker can crash after remote
+acceptance and before local acknowledgement, causing redelivery. Configure the
+publisher's timeout shorter than its lease. See [delivery semantics](docs/PUBLISHING.md).
 
-See [the evidence journal design](docs/RFC-002-EVIDENCE-JOURNAL.md). Host policies
-and provider adapters need application-specific security and integration review.
+## Diagnostics and operations
 
-## Opt-in manual outcome classification
+```bash
+php artisan flowguard:doctor
+php artisan flowguard:stale --minutes=15 --limit=50
+php artisan flowguard:outbox --max-attempts=10 --limit=50
+```
 
-The optional `DatabaseManualResolver` can classify a previously unknown
-external outcome as `reconciled_success` or `reconciled_failure`. These statuses
-are **bookkeeping only**, and are NOT equivalent to completed application-side
-writes. No payment, refund, capture, replay or business record mutation occurs.
+These commands inspect state. A stale processing claim remains fenced; age never
+authorizes repeating a payment. Start with the [operations runbook](docs/OPERATIONS.md)
+for incidents, [retention](docs/RETENTION.md) for data handling and
+[restore drills](docs/NATIVE_RESTORE_DRILL.md) for recovery.
 
-It rejects stale, conflicting, inconclusive or superseded evidence; requires
-**two independently authenticated people and a bound approval verified by an
-application-supplied `ResolutionAuthorization` policy**; and atomically writes
-a decision record with the status change. The package DOES NOT implement login
-or collecting real two-person approvals. An actor-reference string alone is
-not proof of identity or approval. Do not enable this in production without
-an independently reviewed host-app policy.
+## Documentation
 
-See [manual resolution RFC](docs/RFC-002-MANUAL-RESOLUTION.md).
+| Start here | Read next |
+| --- | --- |
+| [Getting started](docs/GETTING_STARTED.md) | Installation, operation claims and atomic event recording |
+| [Documentation index](docs/README.md) | Guides grouped by integration, operations and design |
+| [Public API](docs/PUBLIC_API.md) | Supported calls, named parameters and compatibility rules |
+| [Checkout demo](examples/checkout-demo/README.md) | Isolated Laravel host, signed webhooks and failure exercises |
+| [Verification evidence](docs/STABLE_READINESS.md) | Release checks, measured workloads and evidence boundaries |
 
-## Transactional outbox recording
+## Guarantees and integration boundaries
 
-`DatabaseOutboxRecorder` records a small, durable signal in the same database
-transaction as a business change. It refuses to record outside an active
-transaction. The caller must use the **same database connection** for both
-writes and scope event identities by tenant. Duplicates fail through a database
-unique constraint.
+- Database uniqueness arbitrates claims; duplicate callers never receive another
+  caller's owner capability. Changed payloads conflict instead of silently replaying.
+- Unknown outcomes remain blocked. Processing claims have no automatic TTL reclaim.
+- Outbox delivery is **at least once**. Exactly-once external effects are not guaranteed.
+- Your application owns authentication, tenant isolation, signature verification,
+  provider idempotency, timeouts, approval identities and retention.
+- Store bounded safe metadata and opaque references; keep credentials and raw
+  provider bodies out of package records.
 
-Recording does **not** publish or enqueue anything. A separately configured
-`OutboxDispatcher` or `flowguard:dispatch-once` command can deliver a pending
-message using an application-bound `OutboxPublisher`. There is no bundled
-provider transport, automatic schedule or background daemon.
-See [outbox recording design](docs/RFC-003-OUTBOX.md).
+The stable version commits to library compatibility. Independent human security
+and adopter reviews remain open. See [security](SECURITY.md),
+[tenant boundaries](docs/TENANT_BOUNDARIES.md) and [release scope](docs/RELEASE_CRITERIA.md)
+for the precise contract.
 
-## Outbox reservation lifecycle
-
-`DatabaseOutboxLeaseStore` allows a worker to reserve one pending message,
-acknowledge it after successful publishing, or release it with a bounded retry
-delay and machine-readable error code. Each lease carries an opaque token;
-expired or replaced leases cannot acknowledge delivery. Attempts are capped
-(default: 10), leaving exhausted records for operator inspection.
-
-Consumers **must** support duplicate delivery. A publisher may succeed while
-its worker crashes before acknowledging the row. This is an at-least-once
-foundation, not exactly-once delivery. The host must supply a publisher and
-explicitly schedule its worker. See the [lease contract](docs/RFC-003-LEASING.md)
-and [publishing guide](docs/PUBLISHING.md).
-
-## Correctness and versioning policy
-
-- Never repeat external effects when an existing operation is processing or unknown.
-- No TTL-based automatic lock reclaim. Recovery requires reconciliation.
-- Only application-verified, authorized, validated requests reach the engine.
-- Do not store raw PII, gateway secrets, or complete response bodies in result metadata.
-- The documented 1.x public API follows SemVer; no availability or delivery SLA is offered.
-- Independent-process concurrency, crash injection and SQL restore tests run in
-  CI. They do not replace a real-provider pilot or independent security review.
-
-## Local development
+## Development and contributions
 
 ```bash
 composer install
@@ -231,46 +188,9 @@ php tests/smoke.php
 node --test tools/check-preview-release.test.cjs
 ```
 
-Independent SQL workers require the disposable database setup described in
-[concurrency testing](docs/CONCURRENCY_TESTING.md). The repository-only
-[checkout demo](examples/checkout-demo/README.md) covers signed webhooks,
-provider timeouts, worker exits and full-host restoration.
-
-## Contribution
-
-See the [roadmap](docs/ROADMAP.md), [operations runbook](docs/OPERATIONS.md)
-and [release criteria](docs/RELEASE_CRITERIA.md). Contributions should include a failing regression test,
-public failure scenario and rationale for any API change. Small, reviewable PRs preferred.
+CI covers Laravel/PHP compatibility, independent SQL workers, archive-based
+installation, demo-host behavior and native restoration. See
+[concurrency testing](docs/CONCURRENCY_TESTING.md) and [contributing](CONTRIBUTING.md).
+Report private security issues through [SECURITY.md](SECURITY.md).
 
 MIT © 2026 Ahmed El-Kholy.
-
-## API stability and upgrades
-
-The [supported public API contract](docs/PUBLIC_API.md) is versioned from v1.0.0
-and checked by signature and behavior tests. Operational retention and schema
-rollback policies are described in [retention](docs/RETENTION.md) and the
-[operations runbook](docs/OPERATIONS.md).
-
-
-## Release artifacts
-
-Clean-install CI installs the actual Composer distribution on every supported
-Laravel/database combination. See the [distribution and publication procedure](docs/PACKAGE_RELEASE.md)
-for archive verification, commit-linked artifacts and stable promotion steps.
-
-## Runnable checkout demo
-
-See [the Laravel checkout demo](examples/checkout-demo/README.md) for an isolated host application, signed webhooks, independent HTTP provider, crash/timeout tests, and native full-host restore drills.
-
-## Production integration boundaries
-
-FlowGuard's stable release commits to library compatibility. The application
-owns authentication, tenant isolation, webhook verification, provider adapters,
-transport timeouts, approvals and retention. Outbox delivery is at least once;
-consumers must deduplicate. A crashed processing claim is never automatically
-reclaimed based on age.
-
-Independent human security and adopter reviews remain open. Review the
-[release scope](docs/RELEASE_CRITERIA.md), [tenant boundaries](docs/TENANT_BOUNDARIES.md)
-and [provider pilot evidence](docs/PROVIDER_STAGING_PILOT.md) when integrating
-with your own production workflow.
