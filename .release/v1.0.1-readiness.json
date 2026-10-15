@@ -1,6 +1,6 @@
 {
   "version": "v1.0.1",
-  "status": "PR verified; awaiting exact-main-commit publication checks",
+  "status": "published; exact-source publication and public installation verified",
   "reviewed_code_commit": "643f7630a19dc73ea3331311e264c7e0594c9803",
   "merge_commit": "78e67601828d67e43db092c89911c35f29b17ed0",
   "previous_stable": {
@@ -16,5 +16,14 @@
     "native_restore": 38606825221,
     "release_validation": 38606825209
   },
-  "note": "No push-triggered runs were observed for the merge while all workflows remained active. Recording the verified readiness state creates a new push event. Runtime, migrations and the reviewed patch are unchanged. Publication must still wait for all four exact-commit workflow groups; no gate is bypassed."
+  "note": "v1.0.1 is immutable and published. Historical PR checks above are retained; exact-main checks and public-install publication job succeeded.",
+  "released_source": "fe85777f5a7656b61731274d0a6d5fa004ff060d",
+  "publication_run": 38607750225,
+  "public_install_job": 116003430898,
+  "verified_main_runs": {
+    "ci": 38607750018,
+    "clean_install": 38607750028,
+    "demo": 38607750013,
+    "native_restore": 38607750102
+  }
 }

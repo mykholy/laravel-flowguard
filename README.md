@@ -1,17 +1,39 @@
-# Laravel Flowguard
+# Laravel FlowGuard
 
-**Durable business-operation primitives for Laravel 12 and 13.**
+**Laravel idempotency, durable webhooks and transactional outbox.**
 
-> **Stable release: v1.0.1.** Supports Laravel 12/13 and PHP 8.3/8.4/8.5,
-> with SQLite, MySQL 8 and PostgreSQL 16 validation. The supported PHP API and
-> persisted schema follow [SemVer](docs/PUBLIC_API.md).
-> This release has **not received an independent human security audit** and does
-> not certify a host application's payment integration. Review the
-> [release scope and evidence](docs/RELEASE_CRITERIA.md) before production use.
+[![CI](https://github.com/mykholy/laravel-flowguard/actions/workflows/ci.yml/badge.svg)](https://github.com/mykholy/laravel-flowguard/actions/workflows/ci.yml)
+[![Packagist version](https://img.shields.io/packagist/v/mykholy/laravel-flowguard)](https://packagist.org/packages/mykholy/laravel-flowguard)
+[![PHP](https://img.shields.io/badge/PHP-8.3%20%E2%80%93%208.5-777BB4)](composer.json)
+[![Laravel](https://img.shields.io/badge/Laravel-12%20%7C%2013-FF2D20)](composer.json)
+[![License](https://img.shields.io/github/license/mykholy/laravel-flowguard)](LICENSE)
 
-Flowguard solves a different problem from Telescope, Horizon and Pulse:
-**who is allowed to execute a business operation, whether the outcome is known,
-and whether replay could be unsafe**. It does not replace tracing/monitoring.
+FlowGuard coordinates operations that must remain safe when requests repeat,
+workers crash or a provider times out after accepting a payment. It records who
+owns an operation, preserves its payload identity and keeps uncertain outcomes
+blocked until the application investigates them.
+
+**Stable: [v1.0.2](https://github.com/mykholy/laravel-flowguard/releases/tag/v1.0.2).**
+The supported PHP API and persisted schema follow [SemVer](docs/PUBLIC_API.md).
+The [publication record](docs/STABLE_READINESS.md) links the exact-source checks,
+Composer distribution and fresh public installation.
+
+[Installation](#installation) · [Payment example](#example-payment-capture) ·
+[Checkout demo](examples/checkout-demo/README.md) · [Public API](docs/PUBLIC_API.md) ·
+[Operations](docs/OPERATIONS.md) · [Security](SECURITY.md)
+
+## When to use FlowGuard
+
+| Failure scenario | Primitive | Application responsibility |
+| --- | --- | --- |
+| Two requests attempt the same payment or fulfillment | Scoped operation claim and immutable fingerprint | Derive tenant identity on the server; use provider idempotency |
+| A provider times out with an unknown result | Explicit reconciliation state and read-only evidence | Investigate the provider outcome before any further effect |
+| A signed webhook arrives repeatedly | Durable inbox receipt | Verify the signature and tenant/event binding first |
+| A business transaction commits but queue dispatch fails | Outbox recording on the same database connection | Record the business write and signal in one transaction |
+| A publisher crashes after delivery | Expiring lease, fenced acknowledgement and bounded retries | Deduplicate at the destination; supervise the worker |
+
+Telescope, Horizon and Pulse help observe applications and workers. FlowGuard
+adds durable ownership and delivery primitives to your business workflow.
 
 ## Included primitives
 
@@ -29,10 +51,17 @@ The host application still owns gateway signature verification, tenant security,
 publisher timeouts, remote idempotency and any real two-person approval workflow.
 Flowguard does not guarantee exactly-once effects across external systems.
 
-## Requirements and local development
+## Installation
 
-PHP 8.3+, Laravel 12/13, a transactional database and Composer 2.
-CI tests Laravel 12/13 on PHP 8.3/8.4/8.5, plus MySQL 8 and PostgreSQL 16.
+| Dependency | Supported / verified versions |
+| --- | --- |
+| PHP | 8.3, 8.4, 8.5 |
+| Laravel | 12, 13 |
+| Database | SQLite, MySQL 8, PostgreSQL 16 |
+| Package manager | Composer 2 |
+
+Use a durable transactional database. CI validates compatibility, clean archive
+installation and native SQL restore separately.
 
 The package is published on [Packagist](https://packagist.org/packages/mykholy/laravel-flowguard).
 Install the supported 1.x series:
@@ -43,17 +72,9 @@ php artisan migrate
 php artisan flowguard:doctor
 ```
 
-Review the [v1.0.1 release notes](https://github.com/mykholy/laravel-flowguard/releases/tag/v1.0.1)
+Review the [v1.0.2 release notes](https://github.com/mykholy/laravel-flowguard/releases/tag/v1.0.2)
 and [upgrade procedure](docs/PACKAGE_RELEASE.md). Pin a released version in your
 lockfile and validate your own provider adapter before production deployment.
-
-```bash
-composer install
-composer test
-composer analyse
-composer format-check
-php tests/smoke.php
-```
 
 The service provider is registered using Laravel package discovery. Its migration is
 loaded automatically and is applied by your normal `php artisan migrate` command.
@@ -79,6 +100,7 @@ config after creating data without an intentional migration.
 ```php
 use Mykholy\Flowguard\Flowguard;
 
+// Resolve the merchant from authenticated, authorized application context.
 $guard = app(Flowguard::class);
 $operation = $guard->begin(
     scope: 'payments.capture',
@@ -197,6 +219,23 @@ and [publishing guide](docs/PUBLISHING.md).
 - Independent-process concurrency, crash injection and SQL restore tests run in
   CI. They do not replace a real-provider pilot or independent security review.
 
+## Local development
+
+```bash
+composer install
+composer validate --strict
+composer test
+composer analyse
+composer format-check
+php tests/smoke.php
+node --test tools/check-preview-release.test.cjs
+```
+
+Independent SQL workers require the disposable database setup described in
+[concurrency testing](docs/CONCURRENCY_TESTING.md). The repository-only
+[checkout demo](examples/checkout-demo/README.md) covers signed webhooks,
+provider timeouts, worker exits and full-host restoration.
+
 ## Contribution
 
 See the [roadmap](docs/ROADMAP.md), [operations runbook](docs/OPERATIONS.md)
@@ -222,3 +261,16 @@ for archive verification, commit-linked artifacts and stable promotion steps.
 ## Runnable checkout demo
 
 See [the Laravel checkout demo](examples/checkout-demo/README.md) for an isolated host application, signed webhooks, independent HTTP provider, crash/timeout tests, and native full-host restore drills.
+
+## Production integration boundaries
+
+FlowGuard's stable release commits to library compatibility. The application
+owns authentication, tenant isolation, webhook verification, provider adapters,
+transport timeouts, approvals and retention. Outbox delivery is at least once;
+consumers must deduplicate. A crashed processing claim is never automatically
+reclaimed based on age.
+
+Independent human security and adopter reviews remain open. Review the
+[release scope](docs/RELEASE_CRITERIA.md), [tenant boundaries](docs/TENANT_BOUNDARIES.md)
+and [provider pilot evidence](docs/PROVIDER_STAGING_PILOT.md) when integrating
+with your own production workflow.

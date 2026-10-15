@@ -1,6 +1,17 @@
 # Changelog
 
 This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+## v1.0.2 — 2026-10-15
+
+- Clarify the package description and discovery keywords for Laravel idempotency,
+  durable webhook inbox, transactional outbox and reconciliation.
+- Add README status badges, use-case and compatibility tables, navigation and
+  explicit server-derived merchant context in the payment example.
+- Correct stale beta-era readiness text and record verified v1.0.1 exact-source
+  publication, Packagist indexing and fresh public installation evidence.
+- Runtime, public signatures, dependencies and persisted schema are unchanged.
+  No migration or receipt-fingerprint rewrite is required.
+
 ## v1.0.1 — 2026-10-14
 
 - Correct the repository-only Stripe webhook demo to exclude the mutable

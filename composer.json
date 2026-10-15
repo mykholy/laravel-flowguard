@@ -1,7 +1,7 @@
 {
   "$schema": "https://getcomposer.org/schema.json",
   "name": "mykholy/laravel-flowguard",
-  "description": "Fail-closed Laravel operations with idempotency, reconciliation, durable inbox/outbox, and fenced delivery.",
+  "description": "Laravel idempotency, durable webhook inbox, transactional outbox, and explicit reconciliation for uncertain operations.",
   "type": "library",
   "license": "MIT",
   "keywords": [
@@ -12,7 +12,10 @@
     "payments",
     "webhooks",
     "reliability",
-    "reconciliation"
+    "reconciliation",
+    "transactional-outbox",
+    "deduplication",
+    "fault-tolerance"
   ],
   "authors": [
     {

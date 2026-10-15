@@ -41,13 +41,13 @@ complete the relevant application acceptance work before deployment.
       successful and failed scenarios without claiming full provider acceptance.
 - [x] Supported-version security policy, no automatic pruning, preserved
       idempotency identities, operational diagnostics and upgrade guidance.
-- [ ] At publication: all four required workflow groups must pass on the exact
+- [x] v1.0.1 publication: all four required workflow groups must pass on the exact
       release commit; build and validate the runtime archive and checksum.
-- [ ] After publication: immutable tag, GitHub release, exact Packagist source
+- [x] v1.0.1 after publication: immutable tag, GitHub release, exact Packagist source
       indexing and a fresh public Laravel install must be verified.
 
-The last two checks are enforced by the publication workflow and recorded in
-its run. Source checkboxes above describe existing behavior/evidence; they do
+The last two checks passed for v1.0.1 in the [publication record](STABLE_READINESS.md)
+and remain mandatory for each subsequent release. Source checkboxes above describe existing behavior/evidence; they do
 not substitute for those fresh exact-commit checks.
 
 ## Application acceptance still required

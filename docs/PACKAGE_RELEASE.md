@@ -29,7 +29,7 @@ publication. Review all matrix results for that same commit before promotion.
    at-least-once delivery semantics explicit.
 3. Verify all quality, clean-install demo-host, and native-restore workflows for the exact
    release commit. Inspect the Composer archive and checksum artifact.
-4. Create the immutable `v1.0.0` tag at that reviewed commit and a GitHub release
+4. Create the next immutable version tag (for example, `v1.0.2`) at that reviewed commit and a GitHub release
    describing compatibility, migrations, host integration and known limits.
 5. Submit `https://github.com/mykholy/laravel-flowguard` to Packagist under the
    maintainer's account and enable its GitHub update hook.
