@@ -1,4 +1,4 @@
-# v1.0.0 library release scope and acceptance
+# 1.x library release scope and acceptance
 
 **Scope: a stable PHP and storage compatibility contract for Flowguard's library primitives.**
 A stable version does not certify a host application's payments, authorization,
@@ -41,12 +41,12 @@ complete the relevant application acceptance work before deployment.
       successful and failed scenarios without claiming full provider acceptance.
 - [x] Supported-version security policy, no automatic pruning, preserved
       idempotency identities, operational diagnostics and upgrade guidance.
-- [x] v1.0.1 publication: all four required workflow groups must pass on the exact
+- [x] v1.0.1 and v1.0.2 publication: all four required workflow groups passed on each exact
       release commit; build and validate the runtime archive and checksum.
-- [x] v1.0.1 after publication: immutable tag, GitHub release, exact Packagist source
+- [x] v1.0.1 and v1.0.2 after publication: immutable tags, GitHub releases, exact Packagist source
       indexing and a fresh public Laravel install must be verified.
 
-The last two checks passed for v1.0.1 in the [publication record](STABLE_READINESS.md)
+The last two checks passed for v1.0.1 and v1.0.2 in the [publication record](STABLE_READINESS.md)
 and remain mandatory for each subsequent release. Source checkboxes above describe existing behavior/evidence; they do
 not substitute for those fresh exact-commit checks.
 

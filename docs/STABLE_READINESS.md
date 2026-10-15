@@ -1,5 +1,32 @@
 # Stable release verification
 
+## Published v1.0.2 — verified 2026-10-15
+
+**Latest published stable library release:** [v1.0.2](https://github.com/mykholy/laravel-flowguard/releases/tag/v1.0.2).
+GitHub's immutable release and Packagist both resolve to source
+`136d247ae50f61b9617d91d015a56339cef48258`.
+
+| Exact-source gate | Result | Evidence |
+| --- | --- | --- |
+| PHP/Laravel compatibility, static analysis and independent SQL worker tests | 10/10 passed | [CI](https://github.com/mykholy/laravel-flowguard/actions/runs/38659887584) |
+| Archive-based installation in fresh Laravel apps | 6/6 passed | [Clean installation](https://github.com/mykholy/laravel-flowguard/actions/runs/38659887687) |
+| Checkout demo, faults and host native restore | 9/9 passed | [Demo host](https://github.com/mykholy/laravel-flowguard/actions/runs/38659887708) |
+| Native package database restoration | 2/2 passed | [Native restore](https://github.com/mykholy/laravel-flowguard/actions/runs/38659887640) |
+| Immutable GitHub release, archive/checksum, Packagist SHA match and independent public Composer installation | Passed | [Publication](https://github.com/mykholy/laravel-flowguard/actions/runs/38659887610) |
+
+This is a **library stability and distribution** claim only. v1.0.2 changed
+documentation and package discovery metadata; runtime behavior, API signatures,
+dependencies and database schema were unchanged from v1.0.1. The later
+README artwork and task-oriented guides added to `main` are **not included in
+the v1.0.2 tag**; installing the released package will not silently obtain those
+subsequent repository-only changes.
+
+No independent human security audit, independent adopting team's approval or
+representative live customer staging certification is claimed. Host-specific
+payment-provider behavior, tenant authorization, retention and incident procedures
+must still be validated by the integrating team. See [release criteria](RELEASE_CRITERIA.md)
+and [independent review](INDEPENDENT_SECURITY_REVIEW.md).
+
 ## Published v1.0.1 — verified 2026-10-15
 
 **v1.0.1 is published as a stable library release.** Its supported API, persisted

@@ -29,14 +29,15 @@ publication. Review all matrix results for that same commit before promotion.
    at-least-once delivery semantics explicit.
 3. Verify all quality, clean-install demo-host, and native-restore workflows for the exact
    release commit. Inspect the Composer archive and checksum artifact.
-4. Create the next immutable version tag (for example, `v1.0.2`) at that reviewed commit and a GitHub release
-   describing compatibility, migrations, host integration and known limits.
-5. Submit `https://github.com/mykholy/laravel-flowguard` to Packagist under the
-   maintainer's account and enable its GitHub update hook.
+4. Set the **next unissued version** and matching notes in `.release/preview.json`.
+   The automated publication workflow creates the immutable tag and GitHub release
+   after all exact-source gates pass; never reuse the already published `v1.0.2` tag.
+5. The package is **already on Packagist**. Verify that the existing update hook
+   indexes the new immutable tag and resolves to precisely the reviewed release SHA.
 6. In a fresh application, install `mykholy/laravel-flowguard:^1.0`, migrate,
    run `flowguard:doctor`, and verify the installed source reference matches
-   the reviewed tag. The staged README identifies the intended version; only report publication
-   complete after this public-install check succeeds.
+   the reviewed tag. The `.release/preview.json` manifest identifies the intended version; only
+   report publication complete after this public-install check succeeds.
 
 No Packagist credentials belong in the repository, workflow output or artifacts.
 If a release fails validation, correct it in a new version; never move a
