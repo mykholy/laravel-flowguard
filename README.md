@@ -22,6 +22,7 @@ The [public API and storage contract](docs/PUBLIC_API.md) follow SemVer.
 
 [Install](#installation) · [Payment example](#payment-example) ·
 [Getting started](docs/GETTING_STARTED.md) · [Documentation](docs/README.md) ·
+[Adoption checklist](docs/ADOPTION_CHECKLIST.md) ·
 [Runnable demo](examples/checkout-demo/README.md)
 
 ## What it helps you build
