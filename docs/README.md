@@ -50,7 +50,9 @@ you do not need to enable reconciliation or manual resolution to use the outbox.
 The RFCs describe design contracts and failure semantics; use the guides above
 for your first implementation. [Roadmap](ROADMAP.md) tracks optional future work.
 [Independent security review](INDEPENDENT_SECURITY_REVIEW.md) describes the open
-review request. Stable versioning does not certify your host's provider adapter,
+review request. The [independent reviewer report template](templates/INDEPENDENT_REVIEW_REPORT.md)
+and [external adopter pilot template](templates/EXTERNAL_PILOT_REPORT.md) are
+blank evidence collection tools, **not** evidence of a completed review. Stable versioning does not certify your host's provider adapter,
 authorization policies or production capacity.
 
 [Back to package overview](../README.md)

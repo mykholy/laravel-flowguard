@@ -77,4 +77,4 @@ failure to restore durable audit records.
 
 The host owner and an independent reviewer must sign off on the **same**
 tested build. Passing a local fake HTTP fixture does not close this pilot.
-Once done, link the redacted evidence report and exact SHA in issue #5.
+Copy the [independent staging evidence template](templates/EXTERNAL_PILOT_REPORT.md) and complete it using a nonproduction adopter application and the *same* pinned build for all scenarios. Only signed, sanitized evidence may be linked in issue #5. Until then, issues #41 and #42 remain open.

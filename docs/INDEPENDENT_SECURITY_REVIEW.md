@@ -58,4 +58,6 @@ Never send live payment credentials, card data or raw customer webhook bodies
 in public GitHub issues or review artifacts. Use the private reporting process
 described in SECURITY.md.
 
+For submission, copy [the independent review evidence template](templates/INDEPENDENT_REVIEW_REPORT.md) into the reviewer's own report. Require a dated, identified independent reviewer and commit-bound checklist; do **not** fill a template with implied approvals. Upload findings securely using `SECURITY.md` rather than exposing exploits publicly.
+
 This document is a reviewer brief, **not an independent security attestation**.
